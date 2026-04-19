@@ -86,9 +86,143 @@ def sha256_short(path: Path) -> str:
 
 # ── Bun SEA helpers ───────────────────────────────────────────────────────────
 
+import struct as _struct
+
+_BUN_TRAILER = b"\n---- Bun! ----\n"
+
+
 def _bun_section_is_bytecode(section_bytes: bytes) -> bool:
-    """True when .bun section uses compiled Bun bytecode — text patching corrupts it."""
+    """True when .bun section uses compiled Bun bytecode — must use in-place patching."""
     return b"// @bun @bytecode" in section_bytes[:1024]
+
+
+def _find_bun_section(data) -> tuple[int, int]:
+    """Locate .bun ELF section via direct shdr walk. Returns (file_offset, size)."""
+    e_shoff     = _struct.unpack_from("<Q", data, 0x28)[0]
+    e_shentsize = _struct.unpack_from("<H", data, 0x3A)[0]
+    e_shnum     = _struct.unpack_from("<H", data, 0x3C)[0]
+    e_shstrndx  = _struct.unpack_from("<H", data, 0x3E)[0]
+    strtab_shdr = e_shoff + e_shstrndx * e_shentsize
+    strtab_off  = _struct.unpack_from("<Q", data, strtab_shdr + 0x18)[0]
+    strtab_size = _struct.unpack_from("<Q", data, strtab_shdr + 0x20)[0]
+    strtab      = bytes(data[strtab_off:strtab_off + strtab_size])
+    for i in range(e_shnum):
+        sh = e_shoff + i * e_shentsize
+        sh_name = _struct.unpack_from("<I", data, sh)[0]
+        end = strtab.index(b"\x00", sh_name)
+        if strtab[sh_name:end] == b".bun":
+            return (_struct.unpack_from("<Q", data, sh + 0x18)[0],
+                    _struct.unpack_from("<Q", data, sh + 0x20)[0])
+    raise RuntimeError(".bun section not found")
+
+
+def patch_bun_sea_inplace(binary: Path, patches: list) -> dict:
+    """
+    In-place Bun SEA byte patcher. No objcopy, preserves ELF layout.
+    Runs the patched binary to verify before committing.
+
+    Research ref: docs/BUN_BYTECODE_FORMAT.md in void-patcher repo.
+    Key insight: .bun section has no integrity check; JSC SourceCodeKey is
+    fail-open (mismatch -> bytecode discarded, source re-parsed, app runs).
+    """
+    mode = binary.stat().st_mode & 0o7777
+    original_size = binary.stat().st_size
+    data = bytearray(binary.read_bytes())
+
+    bun_off, bun_size = _find_bun_section(data)
+    bun_lo, bun_hi = bun_off, bun_off + bun_size
+
+    if bytes(data[bun_hi - len(_BUN_TRAILER):bun_hi]) != _BUN_TRAILER:
+        return {"ok": False, "err": "Bun trailer invalid — format change", "applied": 0, "skipped": 0}
+
+    applied_total = 0
+    skipped_total = 0
+    per_patch = []
+
+    for p in patches:
+        applied_n = 0
+        skipped_n = 0
+        for sub in p.get("patches", []):
+            search_regex = sub.get("search_regex")
+            search = sub.get("search")
+            replace = sub.get("replace", "")
+            marker = sub.get("applied_marker")
+
+            if marker and data.find(marker.encode("utf-8", "surrogateescape"), bun_lo, bun_hi) >= 0:
+                continue
+
+            if search_regex:
+                try:
+                    pat = re.compile(search_regex.encode("utf-8", "surrogateescape"), re.DOTALL)
+                except re.error:
+                    skipped_n += 1
+                    continue
+                section_view = bytes(data[bun_lo:bun_hi])
+                for m in pat.finditer(section_view):
+                    mb = m.group(0)
+                    try:
+                        rb = m.expand(replace.encode("utf-8", "surrogateescape"))
+                    except Exception:
+                        skipped_n += 1
+                        continue
+                    if len(rb) > len(mb):
+                        skipped_n += 1
+                        continue
+                    if len(rb) < len(mb):
+                        rb = rb + b" " * (len(mb) - len(rb))
+                    abs_start = bun_lo + m.start()
+                    data[abs_start:abs_start + len(mb)] = rb
+                    applied_n += 1
+            elif search:
+                s_b = search.encode("utf-8", "surrogateescape")
+                r_b = replace.encode("utf-8", "surrogateescape")
+                if len(r_b) > len(s_b):
+                    skipped_n += 1
+                    continue
+                if len(r_b) < len(s_b):
+                    r_b = r_b + b" " * (len(s_b) - len(r_b))
+                pos = bun_lo
+                while True:
+                    j = data.find(s_b, pos, bun_hi)
+                    if j < 0:
+                        break
+                    data[j:j + len(s_b)] = r_b
+                    applied_n += 1
+                    pos = j + len(s_b)
+
+        per_patch.append({"id": p["id"], "applied": applied_n, "skipped": skipped_n})
+        applied_total += applied_n
+        skipped_total += skipped_n
+
+    if len(data) != original_size:
+        return {"ok": False, "err": f"size drift {len(data)} vs {original_size}",
+                "applied": 0, "skipped": skipped_total, "per_patch": per_patch}
+
+    if applied_total == 0:
+        return {"ok": True, "noop": True, "applied": 0, "skipped": skipped_total, "per_patch": per_patch}
+
+    # Write to temp same-dir file, verify by running, then atomic swap.
+    tmp_bin = binary.parent / f".{binary.name}.vpcctmp-{os.getpid()}"
+    try:
+        tmp_bin.write_bytes(bytes(data))
+        tmp_bin.chmod(mode)
+
+        r = subprocess.run([str(tmp_bin), "--version"],
+                           capture_output=True, text=True, timeout=20)
+        out = (r.stdout or "") + (r.stderr or "")
+        if r.returncode != 0 or "Claude Code" not in out:
+            tmp_bin.unlink(missing_ok=True)
+            return {"ok": False, "err": f"verify failed: {out[:120]!r} rc={r.returncode}",
+                    "applied": applied_total, "skipped": skipped_total, "per_patch": per_patch}
+
+        binary.unlink()
+        tmp_bin.rename(binary)
+        binary.chmod(mode)
+    except Exception as e:
+        tmp_bin.unlink(missing_ok=True)
+        return {"ok": False, "err": f"write failed: {e}", "applied": 0, "skipped": skipped_total}
+
+    return {"ok": True, "applied": applied_total, "skipped": skipped_total, "per_patch": per_patch}
 
 
 def read_bun_js(binary: Path) -> tuple[str | None, str]:
@@ -222,38 +356,52 @@ def cmd_patch(args) -> int:
             print(f"  {Y}skip{X} {p['id']:40s}  target not found")
             skip += 1
     elif kind == "bun_sea":
-        # Batch: single extract → all subs → single inject (saves repeated 236MB I/O)
-        text, err = read_bun_js(target)
-        if text is None:
-            is_bytecode = "bytecode format" in err
-            mark = f"{Y}skip{X}" if is_bytecode else f"{R}fail{X}"
-            print(f"  {mark} [bun-extract]  {err}")
-            if is_bytecode:
+        # In-place ELF byte patcher — no objcopy, no corruption. Applies every
+        # js_replace in a single pass, verifies by running patched binary, atomic swap.
+        if args.dry_run:
+            # Dry-run: apply to a temporary in-memory bytearray, count hits only.
+            try:
+                data = bytearray(target.read_bytes())
+                bun_off, bun_size = _find_bun_section(data)
                 for p in js_patches:
-                    print(f"  {Y}skip{X} {p['id']:40s}  Bun bytecode — not patchable")
-                    skip += 1
-            else:
+                    applied_n = 0
+                    for sub in p.get("patches", []):
+                        marker = sub.get("applied_marker")
+                        if marker and data.find(marker.encode("utf-8","surrogateescape"), bun_off, bun_off+bun_size) >= 0:
+                            continue
+                        sr = sub.get("search_regex") or sub.get("search") or ""
+                        if not sr:
+                            continue
+                        try:
+                            if sub.get("search_regex"):
+                                pat = re.compile(sr.encode("utf-8","surrogateescape"), re.DOTALL)
+                                applied_n += sum(1 for _ in pat.finditer(bytes(data[bun_off:bun_off+bun_size])))
+                            else:
+                                applied_n += bytes(data[bun_off:bun_off+bun_size]).count(sr.encode("utf-8","surrogateescape"))
+                        except re.error:
+                            pass
+                    msg = "no-op (already applied)" if applied_n == 0 else f"would apply {applied_n} in-place"
+                    print(f"  {G}ok{X}    {p['id']:40s}  {msg}")
+                    ok += 1
+                print(f"  {Y}dry-run: binary not modified{X}")
+            except Exception as e:
+                print(f"  {R}fail{X}  [bun-inplace]  {e}")
                 fail += len(js_patches)
         else:
-            orig = text
-            for p in js_patches:
-                new_text, n, err = _apply_subs(text, p)
-                if err:
-                    print(f"  {R}fail{X}  {p['id']:40s}  {err}")
-                    fail += 1
-                    continue
-                msg = "no-op (already applied)" if new_text == text else f"{n} replacement(s)"
-                print(f"  {G}ok{X}    {p['id']:40s}  {msg}")
-                text = new_text
-                ok  += 1
-
-            if text != orig and not args.dry_run:
-                ok2, err = write_bun_js(target, text)
-                if not ok2:
-                    print(f"  {R}fail{X}  [bun-inject]  {err}")
-                    fail += 1
-            elif text != orig and args.dry_run:
-                print(f"  {Y}dry-run: binary not modified{X}")
+            result = patch_bun_sea_inplace(target, js_patches)
+            if not result["ok"]:
+                print(f"  {R}fail{X}  [bun-inplace]  {result.get('err','unknown')}")
+                fail += len(js_patches)
+            else:
+                for pr in result.get("per_patch", []):
+                    n = pr["applied"]
+                    msg = "no-op (already applied)" if n == 0 else f"{n} in-place replacement(s)"
+                    print(f"  {G}ok{X}    {pr['id']:40s}  {msg}")
+                    ok += 1
+                if result.get("noop"):
+                    pass  # all already applied
+                else:
+                    print(f"  {G}verified in-place{X}  (ran binary, Claude Code output confirmed)")
     else:
         # cli.js path — patch file directly
         text = target.read_text(encoding="utf-8")
@@ -325,10 +473,14 @@ def cmd_verify(args) -> int:
         return 2
 
     if kind == "bun_sea":
-        text, err = read_bun_js(target)
-        if text is None:
-            print(f"{R}bun extract failed: {err}{X}")
+        # In-place verify: read whole binary, locate .bun section, check markers inside.
+        data = bytearray(target.read_bytes())
+        try:
+            bun_off, bun_size = _find_bun_section(data)
+        except Exception as e:
+            print(f"{R}ELF parse failed: {e}{X}")
             return 2
+        text = bytes(data[bun_off:bun_off + bun_size]).decode("utf-8", errors="surrogateescape")
     else:
         text = target.read_text(encoding="utf-8")
 
