@@ -86,6 +86,11 @@ def sha256_short(path: Path) -> str:
 
 # ── Bun SEA helpers ───────────────────────────────────────────────────────────
 
+def _bun_section_is_bytecode(section_bytes: bytes) -> bool:
+    """True when .bun section uses compiled Bun bytecode — text patching corrupts it."""
+    return b"// @bun @bytecode" in section_bytes[:1024]
+
+
 def read_bun_js(binary: Path) -> tuple[str | None, str]:
     """Extract JS text from .bun ELF section. Copies binary first (ETXTBSY guard)."""
     with tempfile.TemporaryDirectory() as tmp:
@@ -98,8 +103,11 @@ def read_bun_js(binary: Path) -> tuple[str | None, str]:
         )
         if r.returncode != 0:
             return None, f"objcopy dump: {(r.stderr or r.stdout).strip()}"
+        data = section.read_bytes()
+        if _bun_section_is_bytecode(data):
+            return None, "Bun bytecode format — text patching not supported (would corrupt binary)"
         try:
-            return section.read_bytes().decode("utf-8", errors="surrogateescape"), ""
+            return data.decode("utf-8", errors="surrogateescape"), ""
         except Exception as e:
             return None, str(e)
 
@@ -213,8 +221,15 @@ def cmd_patch(args) -> int:
         # Batch: single extract → all subs → single inject (saves repeated 236MB I/O)
         text, err = read_bun_js(target)
         if text is None:
-            print(f"  {R}fail{X}  [bun-extract]  {err}")
-            fail += len(js_patches)
+            is_bytecode = "bytecode format" in err
+            mark = f"{Y}skip{X}" if is_bytecode else f"{R}fail{X}"
+            print(f"  {mark} [bun-extract]  {err}")
+            if is_bytecode:
+                for p in js_patches:
+                    print(f"  {Y}skip{X} {p['id']:40s}  Bun bytecode — not patchable")
+                    skip += 1
+            else:
+                fail += len(js_patches)
         else:
             orig = text
             for p in js_patches:
