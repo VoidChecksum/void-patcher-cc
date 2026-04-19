@@ -1,0 +1,113 @@
+name: upstream-watch
+
+# Monitors @anthropic-ai/claude-code for new releases.
+# On each new version: install it fresh, dry-run + verify every patch, open an
+# issue listing any patches whose signatures no longer match.
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"   # every 6h
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Re-check even if version unchanged"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: upstream-watch
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Resolve latest @anthropic-ai/claude-code version
+        id: ver
+        run: |
+          v=$(npm view @anthropic-ai/claude-code version)
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "Latest upstream: $v"
+
+      - name: Restore last-checked cache
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: .github/cache
+          key: upstream-version-${{ steps.ver.outputs.version }}
+
+      - name: Skip if already green (cache hit)
+        if: steps.cache.outputs.cache-hit == 'true' && inputs.force != true
+        run: |
+          echo "Version ${{ steps.ver.outputs.version }} already validated."
+          echo "SKIP=1" >> "$GITHUB_ENV"
+
+      - name: Install Claude Code globally
+        if: env.SKIP != '1'
+        run: npm install -g @anthropic-ai/claude-code@${{ steps.ver.outputs.version }}
+
+      - name: Install vpcc
+        if: env.SKIP != '1'
+        run: pip install -e .
+
+      - name: Run upstream check
+        if: env.SKIP != '1'
+        id: check
+        run: python .github/scripts/upstream_check.py
+        env:
+          CC_VERSION: ${{ steps.ver.outputs.version }}
+
+      - name: Mark version as validated
+        if: env.SKIP != '1' && steps.check.outputs.broken == '0'
+        run: |
+          mkdir -p .github/cache
+          echo "${{ steps.ver.outputs.version }}" > .github/cache/last-ok.txt
+
+      - name: Open or update breakage issue
+        if: env.SKIP != '1' && steps.check.outputs.broken != '0'
+        uses: actions/github-script@v7
+        env:
+          CC_VERSION: ${{ steps.ver.outputs.version }}
+          BROKEN: ${{ steps.check.outputs.broken }}
+          REPORT_PATH: upstream-report.md
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync(process.env.REPORT_PATH, 'utf8');
+            const title = `upstream: ${process.env.BROKEN} patch(es) broken in claude-code ${process.env.CC_VERSION}`;
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              state: 'open',
+              labels: 'upstream-break',
+            });
+            const existing = issues.find(i => i.title.includes(process.env.CC_VERSION));
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo:  context.repo.repo,
+                issue_number: existing.number,
+                body: `Re-check at ${new Date().toISOString()}:\n\n${body}`,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo:  context.repo.repo,
+                title, body,
+                labels: ['upstream-break', 'automated'],
+              });
+            }

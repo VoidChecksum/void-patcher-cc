@@ -1,0 +1,13 @@
+[Unit]
+Description=Run vpcc autoheal periodically
+Documentation=https://github.com/VoidChecksum/void-patcher-cc
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=6h
+RandomizedDelaySec=30min
+Persistent=true
+Unit=vpcc-autoheal.service
+
+[Install]
+WantedBy=timers.target

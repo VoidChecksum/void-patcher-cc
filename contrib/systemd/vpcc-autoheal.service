@@ -1,0 +1,13 @@
+[Unit]
+Description=vpcc autoheal — re-apply Claude Code patches if upstream changed
+Documentation=https://github.com/VoidChecksum/void-patcher-cc
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/vpcc autoheal --quiet
+Nice=10
+
+[Install]
+WantedBy=default.target

@@ -17,6 +17,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from . import updater as _updater
+
 ROOT        = Path(__file__).resolve().parent.parent
 PATCH_DIR   = ROOT / "patches"
 BACKUP_DIR  = Path.home() / ".vpcc" / "backups"
@@ -417,11 +419,28 @@ def cmd_patch(args) -> int:
             text = new_text
             ok  += 1
         if text != orig and not args.dry_run:
-            target.write_text(text, encoding="utf-8")
-            r = subprocess.run(["node", "--check", str(target)],
-                               capture_output=True, text=True, timeout=15)
-            if r.returncode != 0:
-                print(f"\n{R}✗ cli.js syntax INVALID — rollback recommended{X}")
+            # Atomic write: stage to sibling tmp, node --check it, only then
+            # replace the live cli.js. On any failure the original is untouched.
+            tmp = target.parent / f".{target.name}.vpcctmp-{os.getpid()}"
+            try:
+                tmp.write_text(text, encoding="utf-8")
+                r = subprocess.run(["node", "--check", str(tmp)],
+                                   capture_output=True, text=True, timeout=15)
+                if r.returncode != 0:
+                    tmp.unlink(missing_ok=True)
+                    err = (r.stderr or r.stdout or "").strip().splitlines()[-1:]
+                    print(f"\n{R}✗ cli.js syntax INVALID — aborted, original untouched{X}")
+                    if err:
+                        print(f"  node: {err[0][:180]}")
+                    return 2
+                try:
+                    shutil.copystat(target, tmp)
+                except Exception:
+                    pass
+                os.replace(tmp, target)   # atomic on same filesystem
+            except Exception as e:
+                tmp.unlink(missing_ok=True)
+                print(f"\n{R}✗ write failed: {e} — cli.js untouched{X}")
                 return 2
 
     # ── non-JS patches ─────────────────────────────────────────────────────
@@ -438,6 +457,14 @@ def cmd_patch(args) -> int:
             skip += 1
 
     print(f"\n{B}{ok} ok · {fail} failed · {skip} skipped{X}")
+
+    # record state for autoheal drift detection
+    if target and not args.dry_run and not fail:
+        try:
+            _updater.save_state(last_cc_sha=sha256_short(target), last_cc_kind=kind)
+        except Exception:
+            pass
+
     return 1 if fail else 0
 
 
@@ -546,6 +573,68 @@ def cmd_list(args) -> int:
     return 0
 
 
+def cmd_self_update(args) -> int:
+    """Pull latest patches/*.json from GitHub."""
+    print(f"{B}vpcc self-update{X}  ← {_updater.REPO}@{_updater.BRANCH}")
+    remote = _updater.remote_head_sha("patches")
+    if not remote:
+        print(f"{R}could not reach GitHub API{X}")
+        return 2
+    state = _updater.load_state()
+    local = state.get("patches_commit")
+    print(f"  local  : {local or '(unknown)'}")
+    print(f"  remote : {remote}")
+    if local == remote and not args.force:
+        print(f"{G}✓ already up to date{X}")
+        return 0
+    if args.dry_run:
+        print(f"{Y}dry-run: would sync{X}")
+        return 0
+    changed, sha_or_err = _updater.sync_patches(PATCH_DIR, remote)
+    if changed < 0:
+        print(f"{R}✗ sync failed — {sha_or_err}{X}")
+        return 2
+    print(f"{G}✓ synced{X}  {changed} file(s) updated @ {sha_or_err[:7]}")
+    if changed and not args.no_reapply:
+        print(f"\n{B}re-applying patches{X}")
+        class _P: dry_run = False
+        return cmd_patch(_P())
+    return 0
+
+
+def cmd_autoheal(args) -> int:
+    """Detect CC drift, re-verify, self-update + re-patch if broken."""
+    return _updater.autoheal(
+        find_target=find_target,
+        sha256_short=sha256_short,
+        load_patches=load_patches,
+        cmd_verify_fn=cmd_verify,
+        cmd_patch_fn=cmd_patch,
+        cmd_rollback_fn=cmd_rollback,
+        patch_dir=PATCH_DIR,
+        force=args.force,
+        quiet=args.quiet,
+    )
+
+
+def cmd_check_updates(args) -> int:
+    """Show local vs remote patches commit, no changes."""
+    info = _updater.upstream_status(PATCH_DIR)
+    print(f"{B}vpcc check-updates{X}")
+    print(f"  local commit  : {info['local_commit'] or '(unknown)'}")
+    print(f"  remote commit : {info['remote_commit'] or '(unreachable)'}")
+    print(f"  local files   : {info['local_files']}")
+    if info["drift"]:
+        print(f"{Y}⚠ update available — run 'vpcc self-update'{X}")
+        return 1
+    if not info["local_commit"] and info["remote_commit"]:
+        print(f"{Y}⚠ no sync state — run 'vpcc self-update' to pin current{X}")
+        return 1
+    if info["remote_commit"]:
+        print(f"{G}✓ up to date{X}")
+    return 0
+
+
 # ── entry ─────────────────────────────────────────────────────────────────────
 
 def main() -> int:
@@ -560,13 +649,34 @@ def main() -> int:
     sub.add_parser("rollback", help="Restore from most recent backup")
     sub.add_parser("status",   help="Show install state")
     sub.add_parser("list",     help="List patches in catalog")
+
+    p_su = sub.add_parser("self-update",
+        help="Pull latest patches/*.json from GitHub and re-apply")
+    p_su.add_argument("--dry-run", "-n", action="store_true")
+    p_su.add_argument("--force", "-f", action="store_true",
+        help="Sync even if commit hashes match")
+    p_su.add_argument("--no-reapply", action="store_true",
+        help="Skip re-applying after sync")
+
+    p_ah = sub.add_parser("autoheal",
+        help="Detect Claude Code drift; self-update + re-patch if broken")
+    p_ah.add_argument("--force", "-f", action="store_true",
+        help="Run checks even if CC sha unchanged")
+    p_ah.add_argument("--quiet", "-q", action="store_true")
+
+    sub.add_parser("check-updates",
+        help="Show if remote patches differ from local")
+
     args = ap.parse_args()
     if args.cmd is None:
         ap.print_help()
         return 0
     return {"patch": cmd_patch, "verify": cmd_verify,
             "rollback": cmd_rollback, "status": cmd_status,
-            "list": cmd_list}[args.cmd](args)
+            "list": cmd_list,
+            "self-update": cmd_self_update,
+            "autoheal": cmd_autoheal,
+            "check-updates": cmd_check_updates}[args.cmd](args)
 
 
 if __name__ == "__main__":

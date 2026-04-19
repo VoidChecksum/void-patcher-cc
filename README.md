@@ -220,7 +220,41 @@ vpcc patch --dry-run            # 👁   preview — no file changes
 vpcc patch                      # 🔓  apply every patch (auto-backup first)
 vpcc verify                     # ✅  exit 0 if all patches currently applied
 vpcc rollback                   # ↩️   restore cli.js from latest backup
+vpcc check-updates              # 🛰   show if repo has newer patch signatures
+vpcc self-update                # ⬇    pull latest patches from GitHub + re-apply
+vpcc autoheal                   # 🩹   detect CC drift, re-verify, self-heal if broken
 ```
+
+---
+
+## 🛰  Auto-update pipeline
+
+Anthropic ships Claude Code frequently. The repo carries two pieces that keep
+patches working without manual babysitting:
+
+### On your machine
+- `vpcc autoheal` detects when Claude Code's SHA changes (new `npm install -g`
+  or auto-update), runs `vpcc verify`, and if the signatures have moved it
+  fetches the newest `patches/*.json` from GitHub and re-applies.
+- Enable once with the shipped systemd user timer (6h cadence, jitter, no-op
+  when idle):
+
+  ```bash
+  install -d ~/.config/systemd/user
+  install -m 0644 contrib/systemd/vpcc-autoheal.{service,timer} ~/.config/systemd/user/
+  systemctl --user daemon-reload
+  systemctl --user enable --now vpcc-autoheal.timer
+  ```
+
+- State is tracked in `~/.vpcc/state.json` (CC sha + last-synced patches
+  commit). `vpcc self-update --dry-run` is always safe.
+
+### On GitHub
+- `.github/workflows/upstream-watch.yml` runs every 6h. It pulls the newest
+  `@anthropic-ai/claude-code` from npm, performs a dry-run + verify pass, and
+  opens/updates an `upstream-break` issue listing any patches whose regexes no
+  longer match. Maintainer fix → push → `vpcc autoheal` on clients picks up the
+  new signatures automatically.
 
 ---
 
