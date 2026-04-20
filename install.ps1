@@ -22,29 +22,66 @@ $PreloadDir = Join-Path $env:LOCALAPPDATA 'void-patcher'
 
 $env:PATH = "$BinDir;$env:PATH"
 
-# 1. Claude Code via official installer
-if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
+# 1. Claude Code — install only if genuinely missing
+function Test-RealClaude {
+    $cmd = Get-Command claude -ErrorAction SilentlyContinue
+    if ($cmd) {
+        try {
+            $out = & $cmd.Source --version 2>$null
+            if ($out -match 'Claude Code|claude-code') { return $true }
+        } catch {}
+    }
+    $probes = @(
+        "$env:APPDATA\npm\node_modules\@anthropic-ai\claude-code\node_modules\@anthropic-ai\claude-code-win32-x64\claude.exe",
+        "$env:APPDATA\npm\node_modules\@anthropic-ai\claude-code\node_modules\@anthropic-ai\claude-code-win32-arm64\claude.exe",
+        "$env:LOCALAPPDATA\Programs\claude-code\claude.exe",
+        "$env:USERPROFILE\.claude\local\claude.exe",
+        "$env:USERPROFILE\.claude\bin\claude.exe"
+    )
+    foreach ($p in $probes) {
+        if ((Test-Path $p) -and ((Get-Item $p).Length -gt 1MB)) { return $true }
+    }
+    return $false
+}
+if (Test-RealClaude) {
+    OK "claude already installed — skipping Anthropic installer"
+} else {
     Step "installing Claude Code via $AnthropicInstall"
     Invoke-RestMethod $AnthropicInstall | Invoke-Expression
 }
-OK ("claude binary: " + ((Get-Command claude -ErrorAction SilentlyContinue).Source))
 
-# 2. Python + pipx
+# 2. Python + pipx (skip if present)
 $py = $null
 foreach ($cand in 'python','python3') {
     if (Get-Command $cand -ErrorAction SilentlyContinue) { $py = $cand; break }
 }
 if (-not $py) { Die "Python missing — install from https://python.org" }
 
-if (-not (Get-Command pipx -ErrorAction SilentlyContinue)) {
+if (Get-Command pipx -ErrorAction SilentlyContinue) {
+    OK "pipx already installed"
+} else {
     Step "installing pipx"
     & $py -m pip install --user pipx | Out-Null
     & $py -m pipx ensurepath        | Out-Null
 }
 
-# 3. vpcc
-Step "installing vpcc from git+$Repo"
-pipx install --force "git+https://github.com/$Repo" | Out-Null
+# 3. vpcc — install or upgrade only if needed
+$vpccInstalled = $false
+try { if ((pipx list --short 2>$null | Select-String '^vpcc\s')) { $vpccInstalled = $true } } catch {}
+if ($vpccInstalled) {
+    $remote = (git ls-remote "https://github.com/$Repo" HEAD 2>$null).Split()[0]
+    $already = $false
+    try { if ((pipx runpip vpcc show vpcc 2>$null | Select-String "$remote")) { $already = $true } } catch {}
+    if ($already) {
+        OK "vpcc already at upstream HEAD — skipping reinstall"
+    } else {
+        Step "upgrading vpcc to latest upstream"
+        pipx install --force "git+https://github.com/$Repo" | Out-Null
+    }
+} else {
+    Step "installing vpcc from git+$Repo"
+    pipx install "git+https://github.com/$Repo" | Out-Null
+}
 
 # 4. Clone repo locally (for contrib/ assets)
 New-Item -ItemType Directory -Force -Path $DataDir    | Out-Null
