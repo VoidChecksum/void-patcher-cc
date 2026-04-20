@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from . import updater as _updater
+from . import scanner as _scanner
 
 ROOT        = Path(__file__).resolve().parent.parent
 PATCH_DIR   = ROOT / "patches"
@@ -617,6 +618,144 @@ def cmd_autoheal(args) -> int:
     )
 
 
+def cmd_scan(args) -> int:
+    """Sig-based offset discovery. Prints anchor offsets + regex hit status."""
+    target, kind = find_target()
+    if not target:
+        print(f"{R}claude-code not found{X}")
+        return 2
+
+    try:
+        text = _scanner.load_text_from_target(target, kind)
+    except Exception as e:
+        print(f"{R}extract failed: {e}{X}")
+        return 2
+
+    patches = _scanner.load_patches_from_dir(PATCH_DIR)
+    sc = _scanner.SigScanner(text)
+    rows = sc.scan_patches(patches)
+
+    print(f"{B}vpcc scan — {len(rows)} js_replace patches{X}")
+    print(f"  target : {target}")
+    print(f"  format : {'cli.js' if kind == 'js' else '.bun section (' + str(len(text)) + ' bytes)'}")
+    print(f"  sha    : {sha256_short(target)}")
+    print()
+    print(_scanner.format_scan_report(rows, verbose=args.verbose))
+
+    if args.export_patch:
+        target_id = args.export_patch
+        match = next((r for r in rows if r["id"] == target_id), None)
+        if not match:
+            print(f"\n{R}no patch id '{target_id}'{X}")
+            return 1
+        anchors = match["anchors"]
+        if not anchors:
+            print(f"\n{R}patch has no anchor_strings — cannot regenerate{X}")
+            return 1
+        regex = sc.derive_regex(anchors[0])
+        print(f"\n{B}regenerated regex for {target_id}:{X}")
+        print(f"  {regex}")
+
+    return 1 if any(r["status"] == "drift" for r in rows) else 0
+
+
+def cmd_doctor(args) -> int:
+    """Full health report: sha, patches applied, sig drift, backup count, upstream."""
+    target, kind = find_target()
+    patches = load_patches()
+    print(f"{B}vpcc doctor{X}")
+    print(f"  vpcc ver   : {__import__('vpcc').__version__ if hasattr(__import__('vpcc'), '__version__') else '2.1.114'}")
+    print(f"  patches    : {len(patches)}")
+    if not target:
+        print(f"  target     : {R}NOT FOUND{X}")
+        return 2
+    label = "cli.js" if kind == "js" else "Bun SEA ELF"
+    print(f"  target     : {target}")
+    print(f"  format     : {label}")
+    print(f"  sha256     : {sha256_short(target)}")
+    print(f"  size       : {target.stat().st_size // 1024 // 1024} MB")
+
+    # sig drift
+    try:
+        text = _scanner.load_text_from_target(target, kind)
+        rows = _scanner.SigScanner(text).scan_patches(_scanner.load_patches_from_dir(PATCH_DIR))
+        drift = [r["id"] for r in rows if r["status"] == "drift"]
+        if drift:
+            print(f"  {Y}sig drift  : {len(drift)} patches — {', '.join(drift[:3])}{'...' if len(drift) > 3 else ''}{X}")
+        else:
+            print(f"  {G}sig drift  : 0 (all anchors locatable){X}")
+    except Exception as e:
+        print(f"  {R}sig scan   : failed — {e}{X}")
+
+    # applied markers
+    try:
+        rc_v = cmd_verify(type("A", (), {})())
+    except SystemExit:
+        rc_v = 1
+    print(f"  applied    : {'all' if rc_v == 0 else 'partial/none'}")
+
+    # backups
+    baks = sorted(BACKUP_DIR.glob("claude.*.bak"))
+    print(f"  backups    : {len(baks)} in {BACKUP_DIR}")
+
+    # upstream
+    try:
+        info = _updater.upstream_status(PATCH_DIR)
+        if info["drift"]:
+            print(f"  {Y}upstream   : behind — run 'vpcc self-update'{X}")
+        elif info["remote_commit"]:
+            print(f"  {G}upstream   : current{X}")
+        else:
+            print(f"  upstream   : unreachable")
+    except Exception:
+        print(f"  upstream   : error")
+
+    return 0
+
+
+def cmd_watch(args) -> int:
+    """Daemon: poll cli.js/SEA mtime+sha; on change, backup + autoheal."""
+    import time
+    target, kind = find_target()
+    if not target:
+        print(f"{R}claude-code not found{X}")
+        return 2
+    print(f"{B}vpcc watch — polling every {args.interval}s{X}")
+    print(f"  target: {target}")
+
+    last_sha = sha256_short(target)
+    last_mtime = target.stat().st_mtime
+    print(f"  sha   : {last_sha}")
+
+    try:
+        while True:
+            time.sleep(args.interval)
+            try:
+                target, kind = find_target()
+                if not target:
+                    print(f"{Y}  target vanished — waiting{X}")
+                    continue
+                m = target.stat().st_mtime
+                if m == last_mtime:
+                    continue
+                cur_sha = sha256_short(target)
+                if cur_sha == last_sha:
+                    last_mtime = m
+                    continue
+                print(f"\n{Y}[{datetime.now().strftime('%H:%M:%S')}] CC changed: {last_sha} -> {cur_sha}{X}")
+                backup(target, kind)
+                class _A: force = False; quiet = False
+                rc = cmd_autoheal(_A())
+                print(f"  autoheal rc={rc}")
+                last_sha = sha256_short(target)
+                last_mtime = target.stat().st_mtime
+            except Exception as e:
+                print(f"{R}  watch loop error: {e}{X}")
+    except KeyboardInterrupt:
+        print(f"\n{B}watch stopped{X}")
+        return 0
+
+
 def cmd_check_updates(args) -> int:
     """Show local vs remote patches commit, no changes."""
     info = _updater.upstream_status(PATCH_DIR)
@@ -667,6 +806,20 @@ def main() -> int:
     sub.add_parser("check-updates",
         help="Show if remote patches differ from local")
 
+    p_sc = sub.add_parser("scan",
+        help="Signature-based offset discovery (survives regex drift)")
+    p_sc.add_argument("--verbose", "-v", action="store_true")
+    p_sc.add_argument("--export-patch", metavar="ID",
+        help="Regenerate regex for patch ID from anchor strings")
+
+    sub.add_parser("doctor",
+        help="Full health report: target, patches, sig drift, upstream")
+
+    p_w = sub.add_parser("watch",
+        help="Daemon: poll target, autoheal on change")
+    p_w.add_argument("--interval", "-i", type=int, default=10,
+        help="Poll interval seconds (default 10)")
+
     args = ap.parse_args()
     if args.cmd is None:
         ap.print_help()
@@ -676,7 +829,10 @@ def main() -> int:
             "list": cmd_list,
             "self-update": cmd_self_update,
             "autoheal": cmd_autoheal,
-            "check-updates": cmd_check_updates}[args.cmd](args)
+            "check-updates": cmd_check_updates,
+            "scan": cmd_scan,
+            "doctor": cmd_doctor,
+            "watch": cmd_watch}[args.cmd](args)
 
 
 if __name__ == "__main__":

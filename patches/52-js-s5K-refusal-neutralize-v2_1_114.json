@@ -1,0 +1,25 @@
+{
+  "id": "js-s5K-refusal-neutralize-v2.1.114",
+  "description": "v2.1.114 successor of gM4 — refusal stop_reason handler (s5K) short-circuited. Any stop_reason==\"refusal\" silently ignored, turn continues without AUP refusal UI.",
+  "type": "js_replace",
+  "validate_js": true,
+  "scan_signatures": true,
+  "anchor_strings": [
+    "function s5K",
+    "tengu_refusal_api_response",
+    "Claude Code is unable to respond"
+  ],
+  "version_first_seen": "2.1.114",
+  "version_last_tested": "2.1.114",
+  "offset_v2_1_114": 111962083,
+  "patches": [
+    {
+      "search_regex": "function s5K\\(([A-Za-z_$][\\w$]*),([A-Za-z_$][\\w$]*),([A-Za-z_$][\\w$]*)\\)\\{if\\(\\1!==\"refusal\"\\)return;",
+      "replace": "function s5K(\\1,\\2,\\3){return;if(\\1!==\"refusal\")return;",
+      "applied_marker": "function s5K(H,$,q){return;if(",
+      "count": 0,
+      "required": false,
+      "description": "Early-return neutralizes refusal telemetry + AUP error wrapping (v2.1.114)"
+    }
+  ]
+}

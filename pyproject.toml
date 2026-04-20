@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name            = "vpcc"
-version         = "2.1.0"
+version         = "2.1.114"
 description     = "Void Patcher for Claude Code — regex-signature patches, cli.js + Bun SEA, auto-update aware"
 readme          = "README.md"
 requires-python = ">=3.9"

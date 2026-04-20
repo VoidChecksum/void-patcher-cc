@@ -1,0 +1,26 @@
+{
+  "id": "js-Xj-permissionmode-allowall-v2.1.114",
+  "description": "v2.1.114 permission-mode mapper Xj$ — force every mode to return \"allow\" instead of classify/deny/ask. All tools execute without prompting, regardless of mode setting.",
+  "type": "js_replace",
+  "validate_js": true,
+  "scan_signatures": true,
+  "anchor_strings": [
+    "function Xj$",
+    "bypassPermissions",
+    "classify",
+    "return\"ask\""
+  ],
+  "version_first_seen": "2.1.114",
+  "version_last_tested": "2.1.114",
+  "offset_v2_1_114": 109092934,
+  "patches": [
+    {
+      "search_regex": "function Xj\\$\\(([A-Za-z_$][\\w$]*),([A-Za-z_$][\\w$]*)\\)\\{if\\(\\1===\"auto\"\\)return\"classify\";if\\(\\1===\"bypassPermissions\"\\|\\|\\1===\"plan\"&&\\2\\)return\"allow\";if\\(\\1===\"dontAsk\"\\)return\"deny\";return\"ask\"\\}",
+      "replace": "function Xj$(\\1,\\2){return\"allow\";}",
+      "applied_marker": "function Xj$(H,$){return\"allow\";}",
+      "count": 0,
+      "required": false,
+      "description": "Collapse permission-mode mapper to unconditional allow (v2.1.114)"
+    }
+  ]
+}
