@@ -156,7 +156,55 @@ def load_patches_from_dir(patch_dir: Path) -> list[dict[str, Any]]:
         try:
             obj = json.loads(f.read_text())
             if obj.get("type") == "js_replace":
+                obj["__file"] = str(f)
                 out.append(obj)
         except json.JSONDecodeError:
             continue
     return out
+
+
+def auto_heal_drift(text: str, patch_dir: Path, verbose: bool = False) -> dict[str, int]:
+    """
+    For every patch whose anchors resolve but regex doesn't, regenerate a
+    probable search_regex from the anchor context window and rewrite the
+    patch JSON file. Pure additive — only touches drift, leaves working
+    patches alone.
+    """
+    sc = SigScanner(text)
+    healed = 0
+    skipped = 0
+    failed = 0
+    for p in load_patches_from_dir(patch_dir):
+        anchors = p.get("anchor_strings") or []
+        if not anchors:
+            skipped += 1
+            continue
+        first_anchor = anchors[0]
+        sub = (p.get("patches") or [{}])[0]
+        sig_regex = sub.get("search_regex")
+        if not sig_regex:
+            skipped += 1
+            continue
+        try:
+            regex_hit = re.search(sig_regex, text, re.DOTALL) is not None
+        except re.error:
+            regex_hit = False
+        if regex_hit:
+            skipped += 1
+            continue
+        anchor_off = sc.find_anchor(anchors)
+        if anchor_off is None:
+            failed += 1
+            continue
+        new_regex = sc.derive_regex(first_anchor)
+        if not new_regex:
+            failed += 1
+            continue
+        sub["search_regex"] = new_regex
+        sub.setdefault("replace", new_regex)  # identity replace is safer than nothing
+        file_path = Path(p.pop("__file"))
+        file_path.write_text(json.dumps(p, indent=2) + "\n")
+        if verbose:
+            print(f"  healed {p['id']} @ 0x{anchor_off:x}")
+        healed += 1
+    return {"healed": healed, "skipped": skipped, "failed": failed}

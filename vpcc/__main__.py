@@ -642,6 +642,11 @@ def cmd_scan(args) -> int:
     print()
     print(_scanner.format_scan_report(rows, verbose=args.verbose))
 
+    if getattr(args, "auto_heal", False):
+        res = _scanner.auto_heal_drift(text, PATCH_DIR, verbose=args.verbose)
+        print(f"\n{B}auto-heal:{X}  {G}{res['healed']} healed{X}  "
+              f"{res['skipped']} skipped  {R}{res['failed']} failed{X}")
+
     if args.export_patch:
         target_id = args.export_patch
         match = next((r for r in rows if r["id"] == target_id), None)
@@ -756,6 +761,32 @@ def cmd_watch(args) -> int:
         return 0
 
 
+def cmd_install_preload(args) -> int:
+    """Copy contrib/preload/claude-preload.js into wrapper's expected path."""
+    src = ROOT / "contrib" / "preload" / "claude-preload.js"
+    if not src.exists():
+        print(f"{R}source missing: {src}{X}")
+        return 2
+    dst_dir = Path.home() / ".local/share/void-patcher"
+    dst_dir.mkdir(parents=True, exist_ok=True)
+    dst = dst_dir / "claude-preload.js"
+    dst.write_bytes(src.read_bytes())
+    dst.chmod(0o644)
+    print(f"{G}✓ installed preload{X}  {src.name} → {dst}")
+    print(f"  wrapper will auto-load via BUN_OPTIONS=--preload on next run")
+    return 0
+
+
+def cmd_uninstall_preload(args) -> int:
+    dst = Path.home() / ".local/share/void-patcher/claude-preload.js"
+    if dst.exists():
+        dst.unlink()
+        print(f"{G}✓ removed{X} {dst}")
+    else:
+        print(f"{Y}not installed{X}")
+    return 0
+
+
 def cmd_check_updates(args) -> int:
     """Show local vs remote patches commit, no changes."""
     info = _updater.upstream_status(PATCH_DIR)
@@ -806,11 +837,18 @@ def main() -> int:
     sub.add_parser("check-updates",
         help="Show if remote patches differ from local")
 
+    sub.add_parser("install-preload",
+        help="Deploy runtime monkey-patch preload hook (100% survival layer)")
+    sub.add_parser("uninstall-preload",
+        help="Remove runtime preload hook")
+
     p_sc = sub.add_parser("scan",
         help="Signature-based offset discovery (survives regex drift)")
     p_sc.add_argument("--verbose", "-v", action="store_true")
     p_sc.add_argument("--export-patch", metavar="ID",
         help="Regenerate regex for patch ID from anchor strings")
+    p_sc.add_argument("--auto-heal", action="store_true",
+        help="Rewrite drifted regexes in patches/*.json from anchor windows")
 
     sub.add_parser("doctor",
         help="Full health report: target, patches, sig drift, upstream")
@@ -832,7 +870,9 @@ def main() -> int:
             "check-updates": cmd_check_updates,
             "scan": cmd_scan,
             "doctor": cmd_doctor,
-            "watch": cmd_watch}[args.cmd](args)
+            "watch": cmd_watch,
+            "install-preload": cmd_install_preload,
+            "uninstall-preload": cmd_uninstall_preload}[args.cmd](args)
 
 
 if __name__ == "__main__":

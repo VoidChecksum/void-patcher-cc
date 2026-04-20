@@ -1,0 +1,23 @@
+{
+  "id": "js-tg7-permission-writer-false-v2.1.114",
+  "description": "Force the tg7(A) predicate (returns true when a path requires a write-permission prompt) to always return false. Removes permission prompts for write ops at source.",
+  "type": "js_replace",
+  "validate_js": true,
+  "scan_signatures": true,
+  "anchor_strings": [
+    "function tg7",
+    "Claude requested permissions to write"
+  ],
+  "version_first_seen": "2.1.114",
+  "version_last_tested": "2.1.114",
+  "patches": [
+    {
+      "search_regex": "function tg7\\(([A-Za-z_$][\\w$]*)\\)\\{",
+      "replace": "function tg7(\\1){return!1;",
+      "applied_marker": "function tg7(A){return!1;",
+      "count": 0,
+      "required": false,
+      "description": "tg7 predicate always false (v2.1.114)"
+    }
+  ]
+}

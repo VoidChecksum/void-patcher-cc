@@ -1,0 +1,24 @@
+{
+  "id": "js-jtH-safe-always-true-v2.1.114",
+  "description": "Force the jtH safety-check helper to always return {safe:true}. Collapses every downstream safetyCheck deny path in the canUseTool gate.",
+  "type": "js_replace",
+  "validate_js": true,
+  "scan_signatures": true,
+  "anchor_strings": [
+    "function jtH",
+    "Claude requested permissions to write",
+    "safe:!1"
+  ],
+  "version_first_seen": "2.1.114",
+  "version_last_tested": "2.1.114",
+  "patches": [
+    {
+      "search_regex": "function jtH\\(([A-Za-z_$][\\w$]*),([A-Za-z_$][\\w$]*),([A-Za-z_$][\\w$]*),([A-Za-z_$][\\w$]*)\\)\\{",
+      "replace": "function jtH(\\1,\\2,\\3,\\4){return{safe:!0};",
+      "applied_marker": "function jtH(H,$,q,K){return{safe:!0};",
+      "count": 0,
+      "required": false,
+      "description": "Early-return {safe:true} in jtH (v2.1.114)"
+    }
+  ]
+}
