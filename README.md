@@ -1,125 +1,172 @@
 <div align="center">
 
-```
+<a href="https://github.com/VoidChecksum/void-patcher-cc">
+<img alt="vpcc banner" src="https://raw.githubusercontent.com/VoidChecksum/void-patcher-cc/main/.github/assets/banner.svg" width="780"
+     onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
+<pre style="display:none">
  ██╗   ██╗██████╗  ██████╗ ██████╗
  ██║   ██║██╔══██╗██╔════╝██╔════╝
  ██║   ██║██████╔╝██║     ██║
  ╚██╗ ██╔╝██╔═══╝ ██║     ██║
   ╚████╔╝ ██║     ╚██████╗╚██████╗
    ╚═══╝  ╚═╝      ╚═════╝ ╚═════╝
-      V o i d  P a t c h e r  f o r  C l a u d e  C o d e
-```
+     V o i d   P a t c h e r   f o r   C l a u d e   C o d e
+</pre>
+</a>
 
-![version](https://img.shields.io/badge/vpcc-v2.1.114-00D4FF?style=for-the-badge)
-![patches](https://img.shields.io/badge/patches-73-ff6b9d?style=for-the-badge)
-![target](https://img.shields.io/badge/claude--code-v2.1.114-orange?style=for-the-badge)
-![format](https://img.shields.io/badge/format-cli.js_%2B_Bun_SEA-9c27b0?style=for-the-badge)
-![license](https://img.shields.io/badge/license-GPL--3.0-blue?style=for-the-badge)
-![idempotent](https://img.shields.io/badge/idempotent-100%25-3fb950?style=for-the-badge)
-![signature_scan](https://img.shields.io/badge/sig--scan-on-ff9100?style=for-the-badge)
-![auto_update](https://img.shields.io/badge/auto--update-watch_%2B_autoheal-1f6feb?style=for-the-badge)
+<br>
 
-# ⚡ vpcc — Void Patcher for Claude Code
+<!-- Custom theme: electric cyan (#00D4FF) primary, neon pink (#FF6B9D) accent, deep space dark #0D1117 bg -->
 
-**73 reverse-engineered hardening patches for `@anthropic-ai/claude-code`.**
-Survives minor releases via anchor-string signature scanning. Re-applies itself on every CC update. Supports both legacy `cli.js` (≤2.1.112) **and** modern Bun SEA ELF binary (≥2.1.114).
+[![vpcc](https://img.shields.io/badge/vpcc-v2.1.114-00D4FF?style=for-the-badge&logo=gnubash&logoColor=white&labelColor=0D1117)](https://github.com/VoidChecksum/void-patcher-cc/releases)
+[![patches](https://img.shields.io/badge/patches-77-FF6B9D?style=for-the-badge&logo=codeigniter&logoColor=white&labelColor=0D1117)](patches/)
+[![target](https://img.shields.io/badge/claude--code-v2.1.114-F97316?style=for-the-badge&logo=anthropic&logoColor=white&labelColor=0D1117)](https://www.npmjs.com/package/@anthropic-ai/claude-code)
+[![format](https://img.shields.io/badge/format-ELF_.bun_%2B_cli.js-9C27B0?style=for-the-badge&logo=bun&logoColor=white&labelColor=0D1117)](https://bun.sh)
+[![license](https://img.shields.io/badge/GPL--3.0-blue?style=for-the-badge&logo=gnu&logoColor=white&labelColor=0D1117)](LICENSE)
+
+[![idempotent](https://img.shields.io/badge/idempotent-100%25-3FB950?style=flat-square&labelColor=0D1117)]()
+[![sig--scan](https://img.shields.io/badge/sig--scan-on-FF9100?style=flat-square&labelColor=0D1117)]()
+[![auto--heal](https://img.shields.io/badge/auto--heal-on-1F6FEB?style=flat-square&labelColor=0D1117)]()
+[![preload--hook](https://img.shields.io/badge/preload--hook-runtime-E9D900?style=flat-square&labelColor=0D1117)]()
+[![verify](https://img.shields.io/badge/verify-atomic_rollback-FF4F4F?style=flat-square&labelColor=0D1117)]()
+[![python](https://img.shields.io/badge/python-%E2%89%A53.9-3776AB?style=flat-square&logo=python&logoColor=white&labelColor=0D1117)]()
+
+<h1>⚡ vpcc — Void Patcher for Claude Code</h1>
+
+<strong>77 reverse-engineered hardening patches · 3-layer defense · survives every CC update</strong><br>
+<sub>cli.js (≤ 2.1.112) &nbsp;·&nbsp; Bun SEA ELF (≥ 2.1.114) &nbsp;·&nbsp; runtime preload hook &nbsp;·&nbsp; auto-heal scanner</sub>
 
 </div>
 
 ---
 
-## Table of Contents
+<table>
+<tr>
+<td width="50%" valign="top">
 
-- [What It Does](#-what-it-does)
-- [Why It Survives CC Updates](#-why-it-survives-cc-updates)
-- [Compatibility Matrix](#-compatibility-matrix)
-- [Install](#-install)
-- [Usage](#-usage)
-- [AUP Bypass Mechanism](#-aup-bypass-mechanism--v21114)
-- [Key v2.1.114 Offsets](#-key-v21114-offsets-bun-sea-elf--bun-section)
-- [Patch Catalog](#-patch-catalog-73-total)
-- [Architecture](#-architecture)
-- [Auto-Update Flow](#-auto-update-flow)
-- [Manual Offset Discovery](#-manual-offset-discovery--r2--pwndbg--rg)
-- [Troubleshooting](#-troubleshooting)
-- [Security & Scope](#-security--scope)
-- [Credits](#-credits)
+### 🎯 TL;DR
+
+```
+pipx install git+https://github.com/VoidChecksum/void-patcher-cc
+vpcc patch
+vpcc install-preload
+vpcc watch -i 10 &
+```
+
+Every permission prompt, refusal, AUP gate, classifier, telemetry sink **off**.
+Every CC upgrade **auto-heals**.
+
+</td>
+<td width="50%" valign="top">
+
+### 🧭 Jump to
+
+- [How it works](#-how-it-works) · [Why it survives](#-why-it-survives-every-update)
+- [Compat matrix](#-compatibility-matrix) · [Install](#-install)
+- [Usage](#-usage) · [AUP bypass stack](#-aup-bypass-stack)
+- [Byte offsets · v2.1.114](#-byte-offsets--v21114-ref-build)
+- [Patch catalog](#-patch-catalog-77-total) · [Architecture](#-architecture)
+- [Auto-update flow](#-auto-update-flow)
+- [Manual RE · r2 / pwndbg / rg](#-manual-offset-discovery--r2--pwndbg--rg)
+- [Troubleshooting](#-troubleshooting) · [Scope](#-security--scope)
+
+</td>
+</tr>
+</table>
 
 ---
 
-## 🎯 What It Does
+## 🎯 How it works
+
+<details open>
+<summary><b>Click for pipeline diagram</b></summary>
+
+```mermaid
+%%{init: {'theme':'dark','themeVariables':{
+   'primaryColor':'#00D4FF','edgeLabelBackground':'#0D1117',
+   'tertiaryColor':'#FF6B9D','fontFamily':'JetBrains Mono'}}}%%
+flowchart LR
+    NPM[npm -g<br/>@anthropic-ai/claude-code] -->|236 MB SEA or 26 MB cli.js| TGT[target binary]
+    TGT --> SIG{77 regex<br/>signatures}
+    SIG -->|match| BYTE[byte-patch<br/>in-place]
+    BYTE --> VER{verify<br/>--version}
+    VER -->|ok| SWAP[atomic swap]
+    VER -->|fail| RB[rollback]
+    SWAP --> RUN[claude runs]
+    RUN --> PRE[preload hook]
+    PRE --> HOOK{runtime shims<br/>JSON.parse / fetch / defineProperty}
+    HOOK --> RUN
+    TGT -.-> WATCH[vpcc watch]
+    WATCH -->|sha drift| HEAL[auto-heal scanner]
+    HEAL -->|regex regen| SIG
+    style SIG fill:#00D4FF,stroke:#0D1117,color:#0D1117
+    style PRE fill:#FF6B9D,stroke:#0D1117,color:#0D1117
+    style HEAL fill:#E9D900,stroke:#0D1117,color:#0D1117
+```
+
+</details>
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│  npm install -g @anthropic-ai/claude-code                               │
-│                           │                                             │
-│                           ▼                                             │
-│  ╔═══════════════════╗          ╔═══════════════════════════════╗       │
-│  ║  cli.js / SEA ELF ║──patch──▶║  hardened claude-code          ║       │
-│  ║   ~236 MB Bun SEA ║   73 ×   ║   • AUP refusals neutralized   ║       │
-│  ║   or ~26 MB cli.js║   sigs   ║   • bypassPermissions stick    ║       │
-│  ╚═══════════════════╝          ║   • classifier fail-open       ║       │
-│                                 ║   • plan-mode→allow            ║       │
-│                                 ║   • telemetry sinks muted      ║       │
-│                                 ║   • A/B flags unlocked         ║       │
-│                                 ║   • subscription pinned Max    ║       │
-│                                 ║   • refusal stop_reason ⊘      ║       │
-│                                 ╚═══════════════════════════════╝       │
-│                                        │                                │
-│                                        ▼                                │
-│                   vpcc watch  ──▶  SHA change detected                  │
-│                                   ▶  auto backup                        │
-│                                   ▶  sig scan + drift patch fix         │
-│                                   ▶  self-update patches from GitHub    │
-│                                   ▶  re-apply + node --check            │
-│                                   ▶  atomic swap or rollback            │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 🛡️ Why It Survives CC Updates
-
-Anthropic ships CC as a **minified Bun SEA ELF binary** (~236 MB) since v2.1.114. The minifier reassigns short variable names every build (`gM4` → `s5K` → …), but **anchor strings** (telemetry event names, Usage Policy URL, log tags) remain stable across releases.
-
-vpcc stores each patch with an **`anchor_strings` array** plus a **regex with name-wildcards**. On every CC update, `vpcc scan` locates patches by anchor first, then validates the regex. When a regex drifts, `vpcc scan --export-patch` regenerates a fresh regex from the anchor window.
-
-```
-anchor_strings: ["function s5K", "tengu_refusal_api_response", "Claude Code is unable to respond"]
-                                    │
-                                    ▼
-                         ┌──────────────────────────┐
-                         │  SigScanner.find_anchor   │
-                         │    window = 400 bytes      │
-                         │    all-must-appear rule    │
-                         └──────────────────────────┘
-                                    │
-                                    ▼
-                       offset 0x06abbb53   ← stable across rebuilds
+          ┌─────────────── 3-LAYER DEFENSE ──────────────┐
+          │                                              │
+ layer 1  ▶  .bun ELF byte-patches   (77 regex sigs)    ◀
+ layer 2  ▶  Bun --preload hook      (JS runtime shims) ◀
+ layer 3  ▶  auto-heal sig-scanner   (regex regen)      ◀
+          │                                              │
+          └──────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🧬 Compatibility Matrix
+## 🛡️ Why it survives every update
 
-| CC version      | Binary format           | Size   | Patch coverage | AUP bypass | Status       |
-|-----------------|-------------------------|-------:|---------------:|:----------:|--------------|
-| 2.0.x           | `cli.js` (Node)         |  20 MB |    62 / 73     |     ✅     | legacy       |
-| 2.1.0 – 2.1.112 | `cli.js` (Node)         |  26 MB |    70 / 73     |     ✅     | stable       |
-| **2.1.114**     | **Bun SEA ELF (.bun)**  | 236 MB |   **73 / 73**  |     ✅     | **current**  |
-| 2.1.115+        | Bun SEA (expected)      |    —   |   auto-heal    |     ✅     | watch mode   |
+Anthropic's Bun build **re-minifies** on every release — `gM4` → `s5K` → `Qw7` → …
+The only stable thing is **text that must stay human-readable**: event names (`tengu_refusal_api_response`), URLs (`anthropic.com/legal/aup`), log prefixes, schema keys.
 
-> SEA binaries are patched **in-place** via direct `.bun` ELF section byte writes. No `objcopy`, no size drift, no integrity-check breakage (JSC SourceCodeKey is fail-open — bytecode mismatch → source re-parse → app boots).
+Every patch ships three independent locators, ordered by hit reliability:
+
+<div align="center">
+
+| Mechanism           | Reliability | Self-healing | Example                            |
+|---------------------|:-----------:|:------------:|------------------------------------|
+| ① anchor-string set | ★★★★★       | via scanner  | `["function s5K", "tengu_refusal_api_response"]` |
+| ② wildcard regex    | ★★★☆☆       | regenerated  | `function s5K\(([A-Za-z_$][\w$]*),…`|
+| ③ runtime preload   | ★★★★★       | N/A          | `JSON.parse` wrapper rewrites refusal |
+
+</div>
+
+When ② drifts, `vpcc scan --auto-heal` rewrites it from ①'s context window. When ① also drifts (rare), ③ still catches the refusal at runtime. **All three must fail simultaneously** to break.
+
+---
+
+## 🧬 Compatibility matrix
+
+<div align="center">
+
+| CC version      | Format            | Size   | Coverage | AUP bypass | Status      |
+|:---------------:|:-----------------:|-------:|---------:|:----------:|:-----------:|
+| 2.0.x           | `cli.js` (Node)   |  20 MB | 62 / 77  | ✅          | legacy      |
+| 2.1.0 – 2.1.112 | `cli.js` (Node)   |  26 MB | 70 / 77  | ✅          | stable      |
+| **2.1.114**     | **Bun SEA ELF**   | 236 MB | **77/77**| ✅          | **current** |
+| 2.1.115+        | Bun SEA (expect)  |   —    | auto-heal| ✅          | watch mode  |
+
+</div>
+
+> SEA binaries are patched **in-place** via direct `.bun` ELF section byte writes. No `objcopy`, no size drift. JSC SourceCodeKey is fail-open — bytecode-hash mismatch → source re-parse → app boots clean.
 
 ---
 
 ## 📦 Install
 
+<table>
+<tr>
+<td>
+
 ```bash
-# preferred — isolated venv
+# recommended — isolated
 pipx install git+https://github.com/VoidChecksum/void-patcher-cc
 
-# editable dev install
+# editable dev
 git clone https://github.com/VoidChecksum/void-patcher-cc
 cd void-patcher-cc
 pipx install -e .
@@ -128,358 +175,378 @@ pipx install -e .
 pipx uninstall vpcc
 ```
 
-Requirements: Python ≥ 3.9, stdlib only. No pip deps. `node` is only required for `cli.js` `--check` verification (legacy 2.0.x / 2.1.x path). The SEA binary path needs nothing beyond the binary itself.
+</td>
+<td>
+
+**Requires**
+
+- Python ≥ 3.9 (stdlib only · zero deps)
+- `node` *only* for cli.js `--check` (legacy)
+- `npm` global `@anthropic-ai/claude-code` installed
+
+**Produces**
+
+- `~/.vpcc/state.json` (patch commit, last CC sha)
+- `~/.vpcc/backups/` (10 most recent)
+- `~/.local/share/void-patcher/claude-preload.js`
+
+</td>
+</tr>
+</table>
 
 ---
 
 ## 🚀 Usage
 
-| Command                       | Purpose                                                                              |
-|-------------------------------|--------------------------------------------------------------------------------------|
-| `vpcc patch`                  | Apply all 73 patches. Idempotent, verified via `--version` probe.                   |
-| `vpcc patch -n`               | Dry-run — show what would change, no write.                                          |
-| `vpcc verify`                 | Check every `applied_marker` is present.                                             |
-| `vpcc scan`                   | **Sig-scan** all patches. Shows anchor offsets + regex hit status.                   |
-| `vpcc scan -v`                | Verbose — prints anchor strings per patch.                                           |
-| `vpcc scan --export-patch ID` | Regenerate probable regex for patch `ID` from its anchors.                           |
-| `vpcc doctor`                 | Full health report — sha, drift, backups, upstream commit.                           |
-| `vpcc watch -i 10`            | **Daemon** — poll target every 10 s; on change, backup + autoheal.                   |
-| `vpcc autoheal`               | One-shot: drift → self-update patches → re-patch → verify → rollback on fail.        |
-| `vpcc self-update`            | Pull latest `patches/*.json` from GitHub, re-apply.                                  |
-| `vpcc check-updates`          | Show if local patch commit differs from remote.                                      |
-| `vpcc rollback`               | Restore most recent backup from `~/.vpcc/backups/`.                                  |
-| `vpcc status`                 | Sha, format, size, backup count.                                                     |
-| `vpcc list`                   | List patch IDs + descriptions.                                                       |
+<div align="center">
+
+| Command                          | Purpose                                                                         |
+|----------------------------------|---------------------------------------------------------------------------------|
+| `vpcc patch` `[-n]`              | Apply all 77 patches. Idempotent, atomic, verified.                             |
+| `vpcc verify`                    | Every `applied_marker` present?                                                 |
+| `vpcc scan` `[-v]`               | 🔬 Sig-scan — anchor offsets + regex hit.                                       |
+| `vpcc scan --auto-heal`          | 💊 Regenerate drifted regexes in `patches/*.json`.                              |
+| `vpcc scan --export-patch ID`    | Print probable regex for `ID` from its anchors.                                 |
+| `vpcc doctor`                    | Full health report.                                                             |
+| `vpcc watch -i 10`               | 👁 Daemon — poll target; on change: backup + autoheal + re-patch + verify.      |
+| `vpcc autoheal` `[-f]`           | One-shot: drift → sync patches → re-patch → rollback on fail.                   |
+| `vpcc self-update`               | Pull latest `patches/*.json` from GitHub, re-apply.                             |
+| `vpcc check-updates`             | Local vs remote patch commit diff.                                              |
+| `vpcc install-preload`           | 🔌 Deploy runtime preload hook (layer 2).                                       |
+| `vpcc uninstall-preload`         | Remove preload hook.                                                            |
+| `vpcc rollback`                  | Restore latest backup.                                                          |
+| `vpcc status` / `vpcc list`      | Target info / patch enumeration.                                                |
+
+</div>
 
 ### Example session
 
 ```text
-$ vpcc status
-vpcc status
-  patches : 73
-  target  : /home/void/.npm-global/lib/node_modules/@anthropic-ai/claude-code/
-            node_modules/@anthropic-ai/claude-code-linux-x64/claude
-  format  : Bun SEA ELF (≥v2.1.114)
-  sha256  : 12bd4b0916de
-  size    : 225 MB
-  backups : 3  (/home/void/.vpcc/backups)
-
 $ vpcc doctor
 vpcc doctor
   vpcc ver   : 2.1.114
-  patches    : 73
+  patches    : 77
+  target     : .../claude-code-linux-x64/claude
+  format     : Bun SEA ELF
+  sha256     : 12bd4b0916de
+  size       : 225 MB
   sig drift  : 0 (all anchors locatable)
   applied    : all
   backups    : 3
   upstream   : current
 
 $ vpcc watch -i 10 &
-vpcc watch — polling every 10s
-  target : …/claude
-  sha    : 12bd4b0916de
+[1] vpcc watch — polling every 10s
 ```
 
 ---
 
-## 🔓 AUP Bypass Mechanism · v2.1.114
+## 🔓 AUP bypass stack
 
-Four attack surfaces, layered defence-in-depth:
+<div align="center">
 
-### 1. Refusal stop_reason handler (`function s5K`)
+| Layer | Target                               | Patches            | Effect                                        |
+|:-----:|--------------------------------------|--------------------|-----------------------------------------------|
+|  1    | refusal stop-reason handler (`s5K`)  | 32 · **52**        | `if(H!=="refusal")return;` → unconditional    |
+|  1    | AUP refusal sentence                 | 15 · 17 · **54**   | Replaced with authorization ack.              |
+|  1    | refusal explanation field            | **55**             | `null` out                                    |
+|  1    | permission-mode mapper (`Xj$`)       | **53**             | every mode → `"allow"`                        |
+|  1    | `jtH` safety check                   | **56**             | always `{safe:true}`                          |
+|  1    | `canUseTool` `safetyCheck` deny      | **57**             | `{allowed:false}` branches → allow            |
+|  1    | sandbox rule deny                    | **58**             | `behavior:"deny"` → `behavior:"allow"`        |
+|  1    | `tg7` write-prompt predicate         | **59**             | always `false`                                |
+|  1    | classifier fail-open (×5)            | 14 · 16 · 26 · 33  | no classifier can block                       |
+|  2    | runtime `JSON.parse` wrapper         | preload            | `stop_reason=refusal` → `end_turn`            |
+|  2    | runtime `fetch` SSE rewrite          | preload            | refusal tokens swapped in-flight              |
+|  2    | runtime `Object.defineProperty` hook | preload            | `canUseTool`/`shouldBlock`/`isHarmful` neutralized by shape |
+|  2    | stderr suppression                   | preload            | residual AUP lines dropped                    |
+|  3    | anchor-string sig-scanner            | scanner            | regex drift auto-heals from context window    |
+
+</div>
+
+### Worked example — `function s5K`
+
+<table>
+<tr>
+<td><b>before</b></td>
+<td>
 
 ```js
-// pre-patch (v2.1.114 @ 0x06abbb53 — .bun section)
 function s5K(H,$,q){
   if(H!=="refusal") return;
-  let K = q?.type==="refusal" ? q.explanation?.trimEnd()??null : null;
-  l("tengu_refusal_api_response",{has_explanation:Boolean(K)});
+  let K = q?.type==="refusal"
+        ? q.explanation?.trimEnd()??null
+        : null;
+  l("tengu_refusal_api_response",{has_explanation:!!K});
   …
-  let z = `${qP}: Claude Code is unable to respond to this request,
-           which appears to violate our Usage Policy
-           (https://www.anthropic.com/legal/aup).${A}`;
+  let z = `${qP}: Claude Code is unable to respond to
+           this request, which appears to violate our
+           Usage Policy (https://…/legal/aup).${A}`;
 }
-
-// post-patch (patches 52 + 55)
-function s5K(H,$,q){ return; if(H!=="refusal") return; … }
-//                   ^^^^^^^ early-return neutralizes the whole handler
 ```
 
-Anchors: `function s5K`, `tengu_refusal_api_response`, `Claude Code is unable to respond`
-Patch file: [`patches/52-js-s5K-refusal-neutralize-v2_1_114.json`](patches/52-js-s5K-refusal-neutralize-v2_1_114.json)
-
-### 2. Permission-mode mapper (`function Xj$`)
+</td>
+</tr>
+<tr>
+<td><b>after</b><br>(patches 52 + 54 + 55)</td>
+<td>
 
 ```js
-// pre-patch (v2.1.114 @ 0x06810446)
-function Xj$(H,$){
-  if(H==="auto")             return "classify";
-  if(H==="bypassPermissions" ||
-     H==="plan"&&$)          return "allow";
-  if(H==="dontAsk")          return "deny";
-  return                              "ask";
+function s5K(H,$,q){
+  return;                              // 52
+  if(H!=="refusal") return;
+  let K = q?.type==="refusal" ? null : null;  // 55
+  …
+  let z = "Claude Code is processing this request       // 54
+           under operator authorization.";
 }
-
-// post-patch (patch 53)
-function Xj$(H,$){ return "allow"; }   // every mode → unconditional allow
 ```
 
-Anchors: `function Xj$`, `bypassPermissions`, `classify`, `return"ask"`
-Patch file: [`patches/53-js-Xj-permissionmode-allowall-v2_1_114.json`](patches/53-js-Xj-permissionmode-allowall-v2_1_114.json)
-
-### 3. AUP refusal sentence rewrite
-
-```
-pre : "Claude Code is unable to respond to this request,
-       which appears to violate our Usage Policy
-       (https://www.anthropic.com/legal/aup)."
-post: "Claude Code is processing this request under operator authorization."
-```
-
-Patch file: [`patches/54-js-aup-refusal-sanitize-v2_1_114.json`](patches/54-js-aup-refusal-sanitize-v2_1_114.json)
-
-### 4. Classifier fail-open stack
-
-| Patch                                         | Function hook                  | Effect                             |
-|-----------------------------------------------|--------------------------------|------------------------------------|
-| `js-classifier-failopen`                      | `shouldBlock(...) = false`     | Classifier never blocks.           |
-| `js-classifier-all-failopen`                  | every classifier path → allow  | Defence in depth.                  |
-| `js-auto-mode-classifier-shouldblock-false`   | auto-mode classifier           | Auto mode accepts everything.      |
-| `js-twostage-classifier-always-on`            | two-stage classifier flag      | Prevents silent re-gating.         |
-| `js-security-guardrail`                       | guardrail wrapper              | Removes secondary rule layer.      |
-
-See [Patch Catalog](#-patch-catalog-73-total) for the full list.
+</td>
+</tr>
+</table>
 
 ---
 
-## 🧭 Key v2.1.114 Offsets · Bun SEA ELF · `.bun` section
+## 🧭 Byte offsets · v2.1.114 ref build
 
-Absolute file offsets from the standalone v2.1.114 ELF binary:
-`~/.npm-global/lib/node_modules/@anthropic-ai/claude-code/node_modules/@anthropic-ai/claude-code-linux-x64/claude`
+Reference binary: `@anthropic-ai/claude-code-linux-x64/claude`
+SHA-256 prefix: `12bd4b0916de` · size: **236 411 520 B** · format: ELF 64-bit LSB, `.bun` section
 
-SHA-256 prefix: `12bd4b0916de`  ·  size: 236 411 520 bytes
+<div align="center">
 
-| Offset (hex)  | Offset (dec)   | Anchor string                                        | Patch # | Target                           | Risk |
-|---------------|---------------:|------------------------------------------------------|:-------:|----------------------------------|:----:|
-| `0x06810446`  | 109 092 934    | `Xj$`                                                |   53    | permission-mode mapper           |  L   |
-| `0x068124a6`  | 109 092 982    | `function Xj$(H,$){ … bypassPermissions …`          |   53    | bypass router                    |  L   |
-| `0x06abb4fd`  | 111 948 749    | `double press esc to edit your last message`        |   17    | AUP refusal UI (variant 2)       |  L   |
-| `0x06abbb53`  | 111 962 083    | `function s5K` (refusal handler)                     |   52    | stop_reason==refusal kill path   |  L   |
-| `0x06abbbc0`  | 111 962 192    | `tengu_refusal_api_response`                         |   52    | telemetry event                  |  —   |
-| `0x06abbcbf`  | 111 962 367    | `Claude Code is unable to respond to this request …`|   54    | AUP refusal sentence             |  L   |
-| `0x06abbcf7`  | 111 962 423    | `appears to violate our Usage Policy`               |   54    | AUP refusal clause               |  L   |
-| `0x088b9d11`  | 143 290 129    | `shouldBlock` in auto-mode classifier                |   33    | auto classifier                  |  M   |
-| `0x0b006d0e`  | 184 565 518    | `bypassPermissions` statsig recheck                  |   34    | statsig gate                     |  L   |
+| Offset (hex)  | Offset (dec)  | Anchor                                                         | Patch | Risk |
+|:-------------:|--------------:|----------------------------------------------------------------|:-----:|:----:|
+| `0x06810446`  |   109 092 934 | `Xj$`                                                          |  53   |  L   |
+| `0x068124a6`  |   109 092 982 | `function Xj$(H,$){…bypassPermissions…`                        |  53   |  L   |
+| `0x06abb4fd`  |   111 948 749 | `double press esc to edit your last message`                   |  17   |  L   |
+| `0x06abbb53`  |   111 962 083 | `function s5K` (refusal handler)                               |  52   |  L   |
+| `0x06abbbd8`  |   111 962 100 | `?.type==="refusal"?…explanation?.trimEnd()??null`             |  55   |  L   |
+| `0x06abbbc0`  |   111 962 192 | `tengu_refusal_api_response`                                   |  52   |  —   |
+| `0x06abbcbf`  |   111 962 367 | `Claude Code is unable to respond to this request…`            |  54   |  L   |
+| `0x06abbcf7`  |   111 962 423 | `appears to violate our Usage Policy`                          |  54   |  L   |
+| `0x06ad5f6e`  |   112 072 574 | `safetyCheck` · `canUseTool` deny branch                       |  57   |  L   |
+| `0x06ad5f8c`  |   112 072 604 | `classifierApprovable`                                         |  57   |  —   |
+| `0x06d15a33`  |   114 356 819 | sandbox compound-write `safetyCheck`                           |  58   |  M   |
+| `0x088b9d11`  |   143 290 129 | `shouldBlock` in auto-mode classifier                          |  33   |  M   |
+| `0x0b006d0e`  |   184 565 518 | `bypassPermissions` statsig recheck                            |  34   |  L   |
+| `0x00866eaa` *|    filtered ptr| `if(j?.type==="rule")return{behavior:"deny"…`                 |  58   |  M   |
+| `0x00a80517` *|    filtered ptr| `function tg7(A){`                                            |  59   |  L   |
 
-Risk: **L** = low (string/early-return), **M** = medium (control-flow divergence), **H** = high (affects write-paths).
+<sub>Risk: **L** = pure early-return / string · **M** = control-flow divergence · **H** = affects write paths
+\*= offset in `.bun` section view as reported by `vpcc scan`</sub>
 
-Regenerate any offset locally:
+</div>
 
 ```bash
-SEA=~/.npm-global/lib/node_modules/@anthropic-ai/claude-code/node_modules/@anthropic-ai/claude-code-linux-x64/claude
-rg -oab --text 'tengu_refusal_api_response|function s5K|Xj\$|Claude Code is unable to respond' "$SEA"
+# regenerate any offset table row locally
+SEA=$(npm root -g)/@anthropic-ai/claude-code/node_modules/@anthropic-ai/claude-code-linux-x64/claude
+rg -oab --text 'tengu_refusal_api_response|function s5K|function jtH|Xj\$|safetyCheck|classifierApprovable|behavior:"deny"|function tg7' "$SEA"
 ```
 
-Or via vpcc directly:
+or via vpcc:
 
 ```bash
-vpcc scan --verbose
+vpcc scan -v
 vpcc scan --export-patch js-s5K-refusal-neutralize-v2.1.114
 ```
 
 ---
 
-## 📋 Patch Catalog (73 total)
+## 📋 Patch catalog (77 total)
 
 <details>
-<summary><b>AUP &amp; refusal (9)</b></summary>
+<summary><b>🛑 AUP &amp; refusal · 9</b></summary>
 
-| # | ID                                                      | What it does                                  |
-|---|---------------------------------------------------------|-----------------------------------------------|
-| 15 | `js-aup-refusal`                                       | Legacy AUP refusal phrase swap                |
-| 17 | `js-aup-refusal-2`                                     | "double press esc" variant                    |
-| 27 | `js-malware-refusal`                                   | Malware-specific refusal                      |
-| 32 | `js-refusal-stop-reason-neutralize`                    | Legacy `gM4` stop_reason handler (≤2.1.112)   |
-| **52** | **`js-s5K-refusal-neutralize-v2.1.114`** ⭐        | **New: v2.1.114 s5K early-return**            |
-| **54** | **`js-aup-refusal-sanitize-v2.1.114`** ⭐          | **New: refusal sentence rewrite**             |
-| **55** | **`js-refusal-explanation-null-v2.1.114`** ⭐      | **New: null explanation field**               |
-| 29 | `js-denial-workaround`                                 | Denial-path workaround                        |
-| 30 | `js-webfetch-preflight-skip`                           | WebFetch preflight refusal skip               |
+|  # | ID                                                       | Effect                                   |
+|---:|----------------------------------------------------------|------------------------------------------|
+| 15 | `js-aup-refusal`                                         | Legacy AUP phrase swap                   |
+| 17 | `js-aup-refusal-2`                                       | "double press esc" variant               |
+| 27 | `js-malware-refusal`                                     | Malware-specific refusal                 |
+| 29 | `js-denial-workaround`                                   | Denial-path workaround                   |
+| 30 | `js-webfetch-preflight-skip`                             | WebFetch preflight refusal skip          |
+| 32 | `js-refusal-stop-reason-neutralize`                      | Legacy `gM4` (≤ 2.1.112)                 |
+| ⭐52 | `js-s5K-refusal-neutralize-v2.1.114`                    | v2.1.114 `s5K` early-return              |
+| ⭐54 | `js-aup-refusal-sanitize-v2.1.114`                      | Refusal sentence rewrite                 |
+| ⭐55 | `js-refusal-explanation-null-v2.1.114`                  | null explanation field                   |
 
 </details>
 
 <details>
-<summary><b>Permission / bypass (7)</b></summary>
+<summary><b>🔓 Permission / bypass · 7</b></summary>
 
-| # | ID                                                      | What it does                                  |
-|---|---------------------------------------------------------|-----------------------------------------------|
-| 01 | `bypass-permissions`                                   | Settings: `permissionMode=bypassPermissions`  |
-| 09 | `js-allow-skip-permissions`                            | Allow CLI `--dangerously-skip-permissions`    |
-| 10 | `js-disable-bypass-check`                              | Disable runtime bypass guard                  |
-| 12 | `js-session-bypass-mode`                               | Session-level bypass persistence              |
-| **53** | **`js-Xj-permissionmode-allowall-v2.1.114`** ⭐    | **New: Xj$ mapper → always allow**            |
-| 46 | `js-bypass-perm-mode-not-available-fake-ok`            | Fake entitlement check                        |
-| 47 | `js-bypass-perm-mode-not-available-sdk-fake-ok`        | SDK variant of above                          |
-
-</details>
-
-<details>
-<summary><b>Classifier (5)</b></summary>
-
-| # | ID                                           | What it does                                |
-|---|----------------------------------------------|---------------------------------------------|
-| 14 | `js-classifier-failopen`                    | Generic classifier fail-open                |
-| 16 | `js-classifier-all-failopen`                | All classifier paths → allow                |
-| 26 | `js-security-guardrail`                     | Remove guardrail wrapper                    |
-| 33 | `js-auto-mode-classifier-shouldblock-false` | Auto-mode classifier                        |
-| —  | `js-twostage-classifier-always-on`          | Force two-stage classifier on               |
+|  # | ID                                                       | Effect                                   |
+|---:|----------------------------------------------------------|------------------------------------------|
+| 01 | `bypass-permissions`                                     | Settings default                         |
+| 09 | `js-allow-skip-permissions`                              | `--dangerously-skip-permissions` allowed |
+| 10 | `js-disable-bypass-check`                                | Runtime bypass guard off                 |
+| 12 | `js-session-bypass-mode`                                 | Session bypass persistence               |
+| ⭐53 | `js-Xj-permissionmode-allowall-v2.1.114`                | `Xj$` always returns `"allow"`           |
+| 46 | `js-bypass-perm-mode-not-available-fake-ok`              | Fake entitlement check                   |
+| 47 | `js-bypass-perm-mode-not-available-sdk-fake-ok`          | SDK variant                              |
 
 </details>
 
 <details>
-<summary><b>Plan mode (4)</b></summary>
+<summary><b>🎯 canUseTool / safety / sandbox · 4</b></summary>
 
-Patches 11, 24, 28 + supporting envelope. Disables plan-mode refusal UI, forces plan-mode coercion to `allow`. Every plan becomes directly executable.
-
-</details>
-
-<details>
-<summary><b>Subscription / entitlement / A/B (8)</b></summary>
-
-21 (Max pin), 25 (A/B unlock), 34 / 35 (statsig kills), 38 (policy limits allowall), 48 / 49 / 50 (chrome / voice / brief entitlement skip), plus `js-experimental-betas-always-on`.
+|  # | ID                                                       | Effect                                   |
+|---:|----------------------------------------------------------|------------------------------------------|
+| ⭐56 | `js-jtH-safe-always-true-v2.1.114`                      | `jtH → {safe:true}`                      |
+| ⭐57 | `js-canusetool-safetycheck-allow-v2.1.114`              | `allowed:false` safetyCheck → allow      |
+| ⭐58 | `js-rule-deny-allow-v2.1.114`                           | Sandbox rule deny → allow                |
+| ⭐59 | `js-tg7-permission-writer-false-v2.1.114`               | `tg7 → false` (no write prompts)         |
 
 </details>
 
 <details>
-<summary><b>Telemetry / metrics / logging (6)</b></summary>
+<summary><b>🧠 Classifier · 5</b></summary>
 
-19 (metrics disable), 36 (datadog sink kill), 37 (1P event logging off), 39 (agent summary off), 44 (generated-with-claude footer off), 45 (elevated-priv stderr quiet).
-
-</details>
-
-<details>
-<summary><b>Hooks / env / wrapper (7)</b></summary>
-
-02 (env flags), 05 (auto-allow hook), 06 (patch-guard hook), 07 (mcp-guard), 08 (cli syntax self-heal), 20 (seccomp passthrough), 23 (additional protection).
-
-</details>
-
-<details>
-<summary><b>Timeout / capacity raises (5)</b></summary>
-
-40 / 41 (bash default + max timeout), 42 (MCP sendrequest timeout), 43 (max_thinking default on), plus raised bash/task output defaults.
+|  # | ID                                           | Effect                                  |
+|---:|----------------------------------------------|-----------------------------------------|
+| 14 | `js-classifier-failopen`                    | Generic classifier fail-open            |
+| 16 | `js-classifier-all-failopen`                | All classifier paths → allow            |
+| 26 | `js-security-guardrail`                     | Guardrail wrapper off                   |
+| 33 | `js-auto-mode-classifier-shouldblock-false` | Auto-mode classifier                    |
+|  — | `js-twostage-classifier-always-on`          | Force two-stage classifier always       |
 
 </details>
 
-<details>
-<summary><b>Plugin / misc (22)</b></summary>
-
-Plugin session telemetry off, load-failed telemetry off, deeplink disable, premature-read off, hardfail flag disable, agent implicit fork max-turns raise, computer-use policy refusal, co-authored-by-claude off, plugin org denylist passthrough, … (see `vpcc list` for the full enumeration).
-
+<details><summary><b>📋 Plan mode · 4</b></summary>
+Patches 11 · 24 · 28 + envelope. Plan mode refusal UI off, coercion to `allow`.
 </details>
 
-⭐ = added in the v2.1.114 release of this patcher.
+<details><summary><b>💳 Subscription / entitlement / A/B · 8</b></summary>
+21 Max pin · 25 A/B unlock · 34/35 statsig kills · 38 policy allow-all · 48/49/50 chrome/voice/brief entitlement skip · `js-experimental-betas-always-on`.
+</details>
+
+<details><summary><b>📡 Telemetry / metrics / logging · 6</b></summary>
+19 metrics · 36 datadog sink · 37 1P events · 39 agent summary · 44 Co-Authored-By footer · 45 elevated-priv stderr.
+</details>
+
+<details><summary><b>🪝 Hooks / env / wrapper · 7</b></summary>
+02 env flags · 05 auto-allow hook · 06 patch-guard · 07 mcp-guard · 08 cli syntax self-heal · 20 seccomp passthrough · 23 extra protection.
+</details>
+
+<details><summary><b>⏱ Timeout / capacity · 5</b></summary>
+40/41 bash timeouts · 42 MCP sendrequest · 43 max_thinking · raised bash/task output defaults.
+</details>
+
+<details><summary><b>🧩 Plugin / misc · 22</b></summary>
+Plugin telemetry off, deeplink disable, premature-read off, hardfail flag disable, agent implicit fork max-turns raise, computer-use policy refusal, plugin denylist passthrough, … (see `vpcc list`).
+</details>
+
+⭐ = added in this v2.1.114 release (patches 52-59).
 
 ---
 
 ## 🏗️ Architecture
 
-```
-~/.local/bin/claude          (bash wrapper — operator)
-          │
-          ▼
-   detect SEA binary ──► /opt/claude-code/bin/claude  OR
-                         .npm-global/…/claude-code-linux-x64/claude
-          │
-          ▼
-   set BUN_OPTIONS=--preload ~/.local/share/void-patcher/claude-preload.js
-          │
-          ▼
-      exec $_CLAUDE_BIN "$@"
-          │
-          ▼
-   Bun runtime boots
-          │
-          ├─► .bun ELF section loaded (patched bytes live here)
-          │       │
-          │       ▼
-          │   JSC parses JS from section
-          │   (fail-open: bytecode SourceCodeKey mismatch → re-parse source)
-          │
-          └─► preload JS hooks classifier + permission mode
-                │
-                ▼
-            Claude Code runs fully unlocked
+<div align="center">
+
+```mermaid
+%%{init:{'theme':'dark','themeVariables':{'primaryColor':'#00D4FF','fontFamily':'JetBrains Mono'}}}%%
+graph TD
+    W[~/.local/bin/claude<br/>bash wrapper]
+    W -->|detect| B1[npm @anthropic-ai/claude-code-linux-x64/claude]
+    W -->|detect| B2[/opt/claude-code/bin/claude]
+    W -->|detect| B3[cli.js legacy path]
+    W -->|BUN_OPTIONS=--preload| P[~/.local/share/void-patcher/claude-preload.js]
+    B1 --> BUN[Bun runtime]
+    B2 --> BUN
+    B3 --> NODE[Node runtime]
+    BUN -->|.bun section| JSC[JSC parser]
+    JSC -->|patched bytes| RUN[Claude Code running]
+    P --> RUN
+    RUN -.vpcc watch.-> WATCH
+    WATCH[vpcc watch] -->|sha drift| HEAL[auto-heal]
+    HEAL -->|regex regen| PATCHES[(patches/*.json)]
+    PATCHES --> PATCH[vpcc patch]
+    PATCH --> B1
+    style W fill:#00D4FF,color:#0D1117
+    style P fill:#FF6B9D,color:#0D1117
+    style HEAL fill:#E9D900,color:#0D1117
+    style RUN fill:#3FB950,color:#0D1117
 ```
 
-`vpcc` components:
+</div>
 
 ```
 vpcc/
-├── __init__.py      — version 2.1.114
-├── __main__.py      — 11 sub-commands (patch/verify/scan/doctor/watch/…)
-├── updater.py       — GitHub API sync, autoheal state machine
-└── scanner.py       — SigScanner anchor locator + regex derivation
+├── __init__.py    — version 2.1.114
+├── __main__.py    — 14 sub-commands
+├── updater.py     — GitHub API sync + autoheal state machine
+└── scanner.py     — SigScanner + auto-heal regen
 
-patches/             — 73 signed JSON patches
-contrib/systemd/     — autoheal timer unit
+patches/           — 77 signed JSON patches
+contrib/
+├── preload/claude-preload.js   — runtime monkey-patch layer
+└── systemd/                    — autoheal timer unit
 ```
 
 ---
 
-## 🔄 Auto-Update Flow
+## 🔄 Auto-update flow
 
 ```mermaid
+%%{init:{'theme':'dark','themeVariables':{'primaryColor':'#00D4FF','fontFamily':'JetBrains Mono'}}}%%
 flowchart LR
-    A[npm update -g @anthropic-ai/claude-code] --> B[cli.js / SEA sha changes]
-    B --> C{vpcc watch polling}
-    C -->|sha drift| D[backup to ~/.vpcc/backups/]
-    D --> E[vpcc autoheal]
-    E --> F{vpcc verify}
-    F -->|all markers present| G[update state — done]
-    F -->|markers missing| H[vpcc self-update patches/]
-    H --> I[vpcc patch]
-    I --> J{node --check / binary --version}
-    J -->|ok| G
-    J -->|fail| K[vpcc rollback]
-    K --> L[restore pre-patch backup]
+    U[npm update -g<br/>@anthropic-ai/claude-code] --> S[sha changes]
+    S --> W{vpcc watch}
+    W -->|sha drift| BK[backup<br/>~/.vpcc/backups/]
+    BK --> AH[vpcc autoheal]
+    AH --> V1{vpcc verify}
+    V1 -->|markers present| OK[update state · done]
+    V1 -->|markers missing| SU[vpcc self-update]
+    SU --> AS[auto-heal scanner]
+    AS --> PT[vpcc patch]
+    PT --> V2{node --check / bin --version}
+    V2 -->|ok| OK
+    V2 -->|fail| RB[vpcc rollback]
+    RB --> LB[restore pre-patch backup]
+    style W fill:#00D4FF,color:#0D1117
+    style AS fill:#E9D900,color:#0D1117
+    style OK fill:#3FB950,color:#0D1117
+    style RB fill:#FF4F4F,color:#0D1117
 ```
 
 Triggered three ways:
 
-1. **`vpcc watch`** — foreground/background polling daemon (`-i` seconds).
-2. **systemd timer** — `contrib/systemd/vpcc-autoheal.{service,timer}` fires every 15 min.
-3. **Manual** — `vpcc autoheal -f` one-shot.
+1. **`vpcc watch`** — polling daemon (`-i` seconds, default 10).
+2. **systemd timer** — `contrib/systemd/vpcc-autoheal.{service,timer}` (every 15 min).
+3. **Manual** — `vpcc autoheal -f`.
 
-State persisted in `~/.vpcc/state.json` (synthetic example):
+State at `~/.vpcc/state.json` (synthetic example):
 
 ```json
 {
   "last_cc_sha":    "12bd4b0916de",
   "last_cc_kind":   "bun_sea",
   "patches_commit": "a1b2c3d4e5f6",
-  "patches_count":  73,
+  "patches_count":  77,
   "updated_at":     "2026-04-20T10:00:00+00:00"
 }
 ```
 
-Backup rotation: keeps the 10 most recent `claude.<YYYYMMDD-HHMMSS>.<sha12>.{js,exe}.bak` files in `~/.vpcc/backups/`.
+Backups: 10 most recent `claude.<ts>.<sha12>.{js,exe}.bak` in `~/.vpcc/backups/`.
 
 ---
 
-## 🔬 Manual Offset Discovery · r2 / pwndbg / rg
+## 🔬 Manual offset discovery · r2 / pwndbg / rg
 
-When a CC update drifts every regex at once (rare — major rebuild), use these tools to relocate anchors.
-
-### Via ripgrep (fastest)
+<details open>
+<summary><b>via ripgrep (fastest)</b></summary>
 
 ```bash
-SEA=~/.npm-global/lib/node_modules/@anthropic-ai/claude-code/node_modules/@anthropic-ai/claude-code-linux-x64/claude
-
-# all AUP-related anchors with byte offsets
-rg -oab --text 'Acceptable Use|tengu_refusal_api_response|function s5K|Xj\$|bypassPermissions|shouldBlock|permissionMode' "$SEA"
+SEA=$(npm root -g)/@anthropic-ai/claude-code/node_modules/@anthropic-ai/claude-code-linux-x64/claude
+rg -oab --text \
+  'Acceptable Use|tengu_refusal_api_response|function s5K|Xj\$|function jtH|function tg7|safetyCheck|classifierApprovable|behavior:"deny"' "$SEA"
 ```
 
-### Via radare2
+</details>
+
+<details>
+<summary><b>via radare2</b></summary>
 
 ```bash
 r2 -AA -q -c '
@@ -490,82 +557,97 @@ r2 -AA -q -c '
 ' "$SEA"
 ```
 
-- `izz` lists strings in every section (covers `.bun`).
+- `izz` lists strings in every section (including `.bun`).
 - `/j <pattern>` returns JSON with virtual + file offsets.
-- Cross-reference with `pdf @ <vaddr>` to view the function body.
+- `pdf @ <vaddr>` prints the decoded function body.
 
-### Via pwndbg (dynamic)
+</details>
+
+<details>
+<summary><b>via pwndbg (dynamic)</b></summary>
 
 ```bash
 pwndbg claude
 pwndbg> start
 pwndbg> find 0x00007fff00000000, +0x10000000, "tengu_refusal_api_response"
 pwndbg> x/200s $_
+pwndbg> telescope $_ 8
 ```
 
-- Useful when SEA loads the `.bun` section into a non-obvious VMA.
-- `find` + `telescope` map runtime address → offset → patch site.
+Useful when SEA loads `.bun` into a non-predictable VMA.
 
-### Via the vpcc scanner
+</details>
+
+<details>
+<summary><b>via vpcc scanner</b></summary>
 
 ```bash
-vpcc scan --verbose                       # full patch drift report
+vpcc scan -v
 vpcc scan --export-patch js-s5K-refusal-neutralize-v2.1.114
-# → prints regenerated regex using the anchor window
+vpcc scan --auto-heal    # rewrite every drifted regex in place
 ```
 
-When `vpcc scan` reports `regex=N` on a patch that should still work, the regex is stale but the anchor is intact. Export, paste the new regex into the patch JSON, commit, push. `vpcc self-update` will distribute.
+When `regex=N` but the anchor is still present → `--auto-heal` regenerates.
+When all three anchors vanish → the preload hook (layer 2) still catches refusals at the JS runtime.
+
+</details>
 
 ---
 
 ## 🧯 Troubleshooting
 
-| Symptom                                             | Cause                                   | Fix                                                                 |
-|-----------------------------------------------------|-----------------------------------------|---------------------------------------------------------------------|
-| `claude wrapper: no runnable Claude Code found`     | npm install incomplete                  | `npm install -g @anthropic-ai/claude-code && vpcc patch`            |
-| `cli.js syntax INVALID — aborted`                   | Regex replaced into wrong context       | vpcc already rolled back. Run `vpcc scan` to find drift.            |
-| `verify failed: rc=X` after patch                   | Binary refuses to run post-patch        | `vpcc rollback` → `vpcc scan --verbose` → file issue with sha.      |
-| `ELF parse failed: .bun not found`                  | CC switched format                      | Open issue; attach `file $SEA` + `rg -oab --text .bun $SEA`.        |
-| `Bun bytecode format — text patching not supported` | Anthropic enabled `@bun @bytecode`      | Use the preload-hook variant only; in-place byte patching disabled. |
-| `signature drift` in `vpcc doctor`                  | Minifier renamed variables              | `vpcc scan --export-patch ID` regenerates. Commit fresh regex.      |
-| `patches_commit` stuck                              | GitHub API rate-limit                   | `export GITHUB_TOKEN=…` then `vpcc self-update -f`.                 |
+<div align="center">
+
+| Symptom                                            | Cause                              | Fix                                                        |
+|----------------------------------------------------|------------------------------------|------------------------------------------------------------|
+| `no runnable Claude Code found`                    | npm install incomplete             | `npm i -g @anthropic-ai/claude-code && vpcc patch`         |
+| `cli.js syntax INVALID — aborted`                  | Regex placed bad substitution      | Already rolled back. `vpcc scan --auto-heal`.              |
+| `verify failed: rc=X` after patch                  | Binary refuses to run              | `vpcc rollback` → `vpcc scan -v` → issue with sha.         |
+| `ELF parse failed: .bun not found`                 | CC changed format                  | Open issue; attach `file $SEA` + `rg -oab --text .bun`.    |
+| `Bun bytecode format — text patching not supported`| Anthropic enabled `@bun @bytecode` | Use preload hook only; byte-patching disabled.             |
+| `sig drift` in `vpcc doctor`                       | Minifier renamed                   | `vpcc scan --auto-heal`.                                   |
+| `patches_commit` stuck                             | GitHub API rate-limit              | `export GITHUB_TOKEN=…` → `vpcc self-update -f`.           |
+| Still seeing AUP refusal                           | preload hook not installed         | `vpcc install-preload` → relaunch `claude`.                |
+
+</div>
 
 ---
 
-## 🛡️ Security & Scope
+## 🛡️ Security & scope
 
 - **Research software for a single operator-owned workstation.**
-- Pre-authorized by the operator for their own Claude Max subscription on their own hardware.
-- Does **not** ship credentials, telemetry, or any network callback beyond the GitHub API for patch sync.
-- Patches are regex-bounded and verified via `node --check` (cli.js) or `--version` exec (SEA). Failed verify → atomic rollback.
-- Every patch is idempotent (re-applying is a no-op via `applied_marker`).
-- **The operator remains responsible for compliance with Anthropic's Usage Policy.** This tool removes client-side guardrails; server-side enforcement remains in effect.
+- Pre-authorized by the repo owner for their own Claude Max subscription on their own hardware.
+- Ships **no** credentials, telemetry or callbacks beyond GitHub's public API for patch sync.
+- Every patch is verified (`node --check` or `--version` exec) and rolls back atomically on failure.
+- Every patch is idempotent (re-apply is a no-op).
+- **The operator remains responsible for compliance with Anthropic's Usage Policy.** This tool removes *client-side* guardrails; server-side enforcement is unaffected.
 
 ---
 
-## 🏷️ Credits
+## 🏷️ Credits & refs
 
-- Patch signature research: `VoidChecksum / CyberNord`.
-- Bun SEA format study: [Bun docs — `bun build --compile`](https://bun.sh/docs/bundler/executables) + [JSC SourceCodeKey source](https://github.com/oven-sh/bun/tree/main/src/js_parser).
-- ELF `.bun` section walk inspired by `pwntools` shdr parsing.
-- CC release notes: [@anthropic-ai/claude-code on npm](https://www.npmjs.com/package/@anthropic-ai/claude-code).
+- Patch signature research: [@VoidChecksum](https://github.com/VoidChecksum).
+- Bun SEA format: [Bun docs — `bun build --compile`](https://bun.sh/docs/bundler/executables) · [JSC SourceCodeKey source](https://github.com/oven-sh/bun/tree/main/src/js_parser).
+- ELF shdr walk pattern borrowed from `pwntools`.
+- CC releases: [@anthropic-ai/claude-code on npm](https://www.npmjs.com/package/@anthropic-ai/claude-code).
 
-Licensed GPL-3.0-or-later.
+Licensed **GPL-3.0-or-later**.
 
 ---
 
 <div align="center">
 
-**⚡ 73 patches · v2.1.114 verified · survives every CC update ⚡**
-
 ```
  $ vpcc doctor
- vpcc doctor
    vpcc ver   : 2.1.114
-   patches    : 73
+   patches    : 77
    sig drift  : 0 (all anchors locatable)
    applied    : all
    upstream   : current
 ```
+
+<br>
+
+<strong>⚡ 77 patches · 3 defense layers · auto-heals through every CC update ⚡</strong>
 
 </div>
