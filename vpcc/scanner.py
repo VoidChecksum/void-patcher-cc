@@ -77,10 +77,13 @@ class SigScanner:
             pid = p.get("id", "?")
             anchors = p.get("anchor_strings") or []
             sig_regex = None
+            markers: list[str] = []
             for sub in p.get("patches", []):
-                sig_regex = sub.get("search_regex") or sub.get("search")
-                if sig_regex:
-                    break
+                if not sig_regex:
+                    sig_regex = sub.get("search_regex") or sub.get("search")
+                m = sub.get("applied_marker")
+                if m:
+                    markers.append(m)
 
             anchor_off = self.find_anchor(anchors) if anchors else None
             regex_hit = False
@@ -89,8 +92,12 @@ class SigScanner:
                     regex_hit = re.search(sig_regex, self.text, re.DOTALL) is not None
                 except re.error:
                     regex_hit = False
+            # Post-patch the original anchor/regex often no longer matches — the
+            # bytes were replaced. Treat presence of any applied_marker as proof
+            # the patch already landed, so scan/doctor don't cry drift.
+            marker_hit = any(m in self.text for m in markers)
 
-            if regex_hit or (anchors and anchor_off is not None):
+            if regex_hit or (anchors and anchor_off is not None) or marker_hit:
                 status = "ok"
             elif not anchors and not regex_hit:
                 # Pre-metadata patch (no anchor_strings yet) — cannot be
@@ -103,6 +110,7 @@ class SigScanner:
                 "anchors": anchors,
                 "anchor_offset": anchor_off,
                 "regex_hit": regex_hit,
+                "marker_hit": marker_hit,
                 "status": status,
             })
         return out
