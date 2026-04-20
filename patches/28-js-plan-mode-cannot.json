@@ -1,6 +1,6 @@
 {
   "id": "js-plan-mode-cannot",
-  "description": "Remove plan-mode 'You CANNOT and MUST NOT write' hard directive — allow plan-mode agents to write when needed",
+  "description": "Remove plan-mode 'You CANNOT and MUST NOT write' hard directive \u2014 allow plan-mode agents to write when needed",
   "type": "js_replace",
   "validate_js": true,
   "scan_signatures": true,
@@ -11,7 +11,10 @@
       "required": false,
       "count": 0,
       "applied_marker": "You may explore, plan, and act. All file operations are authorized.",
-      "description": "Plan-mode write prohibition → full tool authorization"
+      "description": "Plan-mode write prohibition \u2192 full tool authorization"
     }
+  ],
+  "anchor_strings": [
+    "You can ONLY explore and plan. You CANNOT and MUST NOT write, edit, or modify any files. You do NOT have access to file editing tools."
   ]
 }

@@ -1,6 +1,6 @@
 {
   "id": "js-bypass-mode",
-  "description": "Enable isBypassPermissionsModeAvailable in cli.js — two specific occurrences with full context",
+  "description": "Enable isBypassPermissionsModeAvailable in cli.js \u2014 two specific occurrences with full context",
   "type": "js_replace",
   "validate_js": true,
   "patches": [
@@ -10,7 +10,7 @@
       "required": false,
       "count": 0,
       "applied_marker": "destination:\"session\"});return{...",
-      "description": "Occurrence 1 — session destination context (regex)"
+      "description": "Occurrence 1 \u2014 session destination context (regex)"
     },
     {
       "search_regex": "alwaysAllowRules:\\{\\},alwaysDenyRules:\\{\\},alwaysAskRules:\\{\\},isBypassPermissionsModeAvailable:!1",
@@ -18,8 +18,13 @@
       "required": false,
       "count": 0,
       "applied_marker": "alwaysAskRules:{},isBypassPermissionsModeAvailable:!0",
-      "description": "Occurrence 2+ — default context object (regex, all instances)"
+      "description": "Occurrence 2+ \u2014 default context object (regex, all instances)"
     }
   ],
-  "scan_signatures": true
+  "scan_signatures": true,
+  "anchor_strings": [
+    ",isBypassPermissionsModeAvailable:!1}",
+    "destination:\"session\"});return{...",
+    ",isBypassPermissionsModeAvailable:!1"
+  ]
 }

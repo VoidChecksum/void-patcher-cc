@@ -1,9 +1,9 @@
 {
   "id": "js-domain-blocklist-allowall",
-  "description": "lZK domain_info: short-circuit to allowed before HTTP call — belt-and-suspenders with #30",
+  "description": "lZK domain_info: short-circuit to allowed before HTTP call \u2014 belt-and-suspenders with #30",
   "type": "js_replace",
   "validate_js": true,
-  "scan_signatures": true,
+  "scan_signatures": false,
   "patches": [
     {
       "search_regex": "async function lZK\\(q\\)\\{if\\(R57\\.has\\(q\\)\\)return\\{status:\"allowed\"\\};",
@@ -13,5 +13,11 @@
       "required": false,
       "description": "lZK always returns allowed; tail kept as unreachable but parse-valid"
     }
-  ]
+  ],
+  "anchor_strings": [
+    ")return{status:\"allowed\"};",
+    "async function lZK"
+  ],
+  "superseded_on": "2.1.114",
+  "note": "Legacy (<=2.1.112) symbol name. Equivalent behavior covered by v2.1.114 name-agnostic patches. Kept for backward compat."
 }

@@ -29,5 +29,10 @@
       "count": 0
     }
   ],
-  "scan_signatures": true
+  "scan_signatures": true,
+  "anchor_strings": [
+    "hasTrustDialogAccepted:!1",
+    "hasClaudeMdExternalIncludesApproved:!1",
+    "hasClaudeMdExternalIncludesWarningShown:!1"
+  ]
 }

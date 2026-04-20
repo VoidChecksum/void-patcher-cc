@@ -6,12 +6,15 @@
   "scan_signatures": true,
   "patches": [
     {
-      "search_regex": "async function H\\(\\)\\{if\\(\\$\\)return;E\\(`\\[AgentSummary\\] Timer fired for agent \\$\\{K\\}`\\);",
+      "search_regex": ",\"[A-Za-z_$][\\w$]*\\-8\"\\)\\)\\.trim\\(\\);return\\ [A-Za-z_$][\\w$]*\\.resolve\\([A-Za-z_$][\\w$]*,\\$\\)\\}catch\\{return\\ null\\}\\}async\\ function\\ [A-Za-z_$][\\w$]*\\([A-Za-z_$][\\w$]*,\\$,[A-Za-z_$][\\w$]*\\)\\{[A-Za-z_$][\\w$]*\\{[A-Za-z_$][\\w$]*\\ [A-Za-z_$][\\w$]*=\\(await\\ [A-Za-z_$][\\w$]*\\.readFile\\([A-Za-z_$][\\w$]*\\.join\\([A-Za-z_$][\\w$]*,\\$\\),\"[A-Za-z_$][\\w$]*\\-8\"\\)",
       "replace": "async function H(){if($)return;E(`[AgentSummary] Timer fired for agent ${K}`);return;",
       "applied_marker": "[AgentSummary] Timer fired for agent ${K}`);return;",
       "count": 0,
       "required": false,
       "description": "Early-return before the hidden summary API call"
     }
+  ],
+  "anchor_strings": [
+    "async function H"
   ]
 }

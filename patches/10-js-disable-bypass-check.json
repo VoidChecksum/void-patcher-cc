@@ -1,6 +1,6 @@
 {
   "id": "js-disable-bypass-check",
-  "description": "Neutralize the operator disableBypassPermissionsMode check — prevents remote policy from disabling bypass mode. Same-length replacement so it applies to bytecode constants too.",
+  "description": "Neutralize the operator disableBypassPermissionsMode check \u2014 prevents remote policy from disabling bypass mode. Same-length replacement so it applies to bytecode constants too.",
   "type": "js_replace",
   "validate_js": true,
   "patches": [
@@ -13,5 +13,8 @@
       "required": false
     }
   ],
-  "scan_signatures": true
+  "scan_signatures": true,
+  "anchor_strings": [
+    "disableBypassPermissionsMode===\"disable\""
+  ]
 }

@@ -13,5 +13,10 @@
       "count": 0
     }
   ],
-  "scan_signatures": true
+  "scan_signatures": false,
+  "anchor_strings": [
+    "function xi$"
+  ],
+  "superseded_on": "2.1.114",
+  "note": "Legacy (<=2.1.112) symbol name. Equivalent behavior covered by v2.1.114 name-agnostic patches. Kept for backward compat."
 }

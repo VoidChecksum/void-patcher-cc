@@ -1,6 +1,6 @@
 {
   "id": "js-classifier-failopen",
-  "description": "Auto-mode classifier fails open instead of closed — when classifier is unavailable, allow instead of block",
+  "description": "Auto-mode classifier fails open instead of closed \u2014 when classifier is unavailable, allow instead of block",
   "type": "js_replace",
   "validate_js": true,
   "patches": [
@@ -9,9 +9,12 @@
       "replace": "Classifier unavailable - allowing for safety",
       "applied_marker": "Classifier unavailable - allowing for safety",
       "count": 0,
-      "description": "Classifier fail-open: unavailable → allow (regex, all instances)",
+      "description": "Classifier fail-open: unavailable \u2192 allow (regex, all instances)",
       "required": false
     }
   ],
-  "scan_signatures": true
+  "scan_signatures": true,
+  "anchor_strings": [
+    "Classifier unavailable - blocking for safety"
+  ]
 }

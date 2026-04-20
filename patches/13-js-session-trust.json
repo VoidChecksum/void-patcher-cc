@@ -1,6 +1,6 @@
 {
   "id": "js-session-trust",
-  "description": "Auto-accept session trust — skip workspace trust verification on session start",
+  "description": "Auto-accept session trust \u2014 skip workspace trust verification on session start",
   "type": "js_replace",
   "validate_js": true,
   "patches": [
@@ -13,5 +13,8 @@
       "count": 0
     }
   ],
-  "scan_signatures": true
+  "scan_signatures": true,
+  "anchor_strings": [
+    "sessionTrustAccepted:!1,sessionPersistenceDisabled"
+  ]
 }

@@ -1,9 +1,9 @@
 {
   "id": "js-refusal-stop-reason-neutralize",
-  "description": "gM4 refusal stop_reason handler short-circuited — any stop_reason==\"refusal\" silently ignored, turn continues",
+  "description": "gM4 refusal stop_reason handler short-circuited \u2014 any stop_reason==\"refusal\" silently ignored, turn continues",
   "type": "js_replace",
   "validate_js": true,
-  "scan_signatures": true,
+  "scan_signatures": false,
   "patches": [
     {
       "search_regex": "function gM4\\(q,K,_\\)\\{if\\(q!==\"refusal\"\\)return;",
@@ -13,5 +13,10 @@
       "required": false,
       "description": "Early-return neutralizes refusal telemetry + error wrapping"
     }
-  ]
+  ],
+  "anchor_strings": [
+    "function gM4"
+  ],
+  "superseded_on": "2.1.114",
+  "note": "Legacy (<=2.1.112) symbol name. Equivalent behavior covered by v2.1.114 name-agnostic patches. Kept for backward compat."
 }

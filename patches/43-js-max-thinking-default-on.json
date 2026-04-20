@@ -13,5 +13,10 @@
       "count": 0
     }
   ],
-  "scan_signatures": true
+  "scan_signatures": true,
+  "anchor_strings": [
+    ">0;let{settings:H}=Um",
+    "return!1;return!0}",
+    "return parseInt"
+  ]
 }

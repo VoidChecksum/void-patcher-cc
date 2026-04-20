@@ -13,5 +13,9 @@
       "count": 0
     }
   ],
-  "scan_signatures": true
+  "scan_signatures": true,
+  "anchor_strings": [
+    "{let{name:K,marketplace:_}=LK",
+    "function FOK"
+  ]
 }

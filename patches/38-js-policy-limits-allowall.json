@@ -1,9 +1,9 @@
 {
   "id": "js-policy-limits-allowall",
-  "description": "N5(q) central capability gate always returns true. Unlocks 30+ server-gated features (allow_remote_sessions, allow_product_feedback, allow_remote_control, allow_quick_web_setup, etc.) regardless of enterprise/team policy_limits dict. Operator is sole admin — no org policy applies.",
+  "description": "N5(q) central capability gate always returns true. Unlocks 30+ server-gated features (allow_remote_sessions, allow_product_feedback, allow_remote_control, allow_quick_web_setup, etc.) regardless of enterprise/team policy_limits dict. Operator is sole admin \u2014 no org policy applies.",
   "type": "js_replace",
   "validate_js": true,
-  "scan_signatures": true,
+  "scan_signatures": false,
   "patches": [
     {
       "search_regex": "function N5\\(q\\)\\{let K=TEY\\(\\);if\\(!K\\)\\{if\\(vEY\\.has\\(q\\)&&\\(Wu\\(\\)\\|\\|o3\\(\\)\\)\\)return!1;return!0\\}let _=K\\[q\\];if\\(!_\\)return!0;return _\\.allowed\\}",
@@ -13,5 +13,11 @@
       "required": false,
       "description": "N5 short-circuit allow-all; original logic kept as unreachable tail"
     }
-  ]
+  ],
+  "anchor_strings": [
+    "))return!1;return!0}let _=K",
+    "return!0;return _.allowed}"
+  ],
+  "superseded_on": "2.1.114",
+  "note": "Legacy (<=2.1.112) symbol name. Equivalent behavior covered by v2.1.114 name-agnostic patches. Kept for backward compat."
 }

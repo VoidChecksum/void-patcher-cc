@@ -1,17 +1,20 @@
 {
   "id": "js-webfetch-preflight-skip",
-  "description": "WebFetch: skip domain_info preflight switch — treat every URL as allowed, no api.anthropic.com/api/web/domain_info roundtrip",
+  "description": "WebFetch: skip domain_info preflight switch \u2014 treat every URL as allowed, no api.anthropic.com/api/web/domain_info roundtrip",
   "type": "js_replace",
   "validate_js": true,
   "scan_signatures": true,
   "patches": [
     {
-      "search_regex": "if\\(!y7\\(\\)\\.skipWebFetchPreflight\\)switch\\(\\(await lZK\\(W\\)\\)\\.status\\)",
+      "search_regex": "[A-Za-z_$][\\w$]*\\.protocol=\"https:\",[A-Za-z_$][\\w$]*=[A-Za-z_$][\\w$]*\\.toString\\(\\);[A-Za-z_$][\\w$]*\\ [A-Za-z_$][\\w$]*=[A-Za-z_$][\\w$]*\\.hostname;[A-Za-z_$][\\w$]*\\(![A-Za-z_$][\\w$]*\\(\\)\\.skipWebFetchPreflight\\)switch\\(\\(await\\ [A-Za-z_$][\\w$]*\\([A-Za-z_$][\\w$]*\\)\\)\\.status\\)\\{case\"allowed\":break;case\"blocked\":[A-Za-z_$][\\w$]*",
       "replace": "if(false)switch((await lZK(W)).status)",
       "applied_marker": "if(false)switch((await lZK(W)).status)",
       "count": 0,
       "required": false,
       "description": "Force-skip WebFetch preflight domain check"
     }
+  ],
+  "anchor_strings": [
+    ".skipWebFetchPreflight)switch"
   ]
 }

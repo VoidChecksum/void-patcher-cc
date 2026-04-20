@@ -1,9 +1,9 @@
 {
   "id": "js-unlock-ab-flags",
-  "description": "Unlock clientDataCache A/B test flags — enhanced Opus 4.6 output style (quiet_salted_ember) and Sonnet 4.6 enhanced prompt (coral_reef_sonnet) — normally server-gated internal flags",
+  "description": "Unlock clientDataCache A/B test flags \u2014 enhanced Opus 4.6 output style (quiet_salted_ember) and Sonnet 4.6 enhanced prompt (coral_reef_sonnet) \u2014 normally server-gated internal flags",
   "type": "js_replace",
   "validate_js": true,
-  "scan_signatures": true,
+  "scan_signatures": false,
   "patches": [
     {
       "search_regex": "(function [A-Za-z_$][\\w$]*\\(q\\)\\{if\\(!v9\\(q\\)\\.includes\\(\"opus-4-6\"\\)\\)return!1;return )[A-Za-z_$][\\w$]*\\(\\)\\.clientDataCache\\?\\.quiet_salted_ember===\"true\"(\\})",
@@ -11,7 +11,7 @@
       "required": false,
       "count": 0,
       "applied_marker": "includes(\"opus-4-6\"))return!1;return !0}",
-      "description": "Opus 4.6 enhanced output style gate → always true (bypass quiet_salted_ember A/B flag)"
+      "description": "Opus 4.6 enhanced output style gate \u2192 always true (bypass quiet_salted_ember A/B flag)"
     },
     {
       "search_regex": "(includes\\(\"sonnet-4-6\"\\)\\)return!1;return )[A-Za-z_$][\\w$]*\\(\\)\\.clientDataCache\\?\\.coral_reef_sonnet===\"true\"(\\})",
@@ -19,7 +19,14 @@
       "required": false,
       "count": 0,
       "applied_marker": "includes(\"sonnet-4-6\"))return!1;return !0}",
-      "description": "Sonnet 4.6 coral_reef enhanced prompt gate → always true"
+      "description": "Sonnet 4.6 coral_reef enhanced prompt gate \u2192 always true"
     }
-  ]
+  ],
+  "anchor_strings": [
+    ".quiet_salted_ember===\"true\"",
+    ")return!1;return )",
+    ".clientDataCache"
+  ],
+  "superseded_on": "2.1.114",
+  "note": "Legacy (<=2.1.112) symbol name. Equivalent behavior covered by v2.1.114 name-agnostic patches. Kept for backward compat."
 }

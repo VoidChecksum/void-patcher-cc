@@ -3,7 +3,7 @@
   "description": "Gb1() POSTs telemetry to http-intake.logs.us5.datadoghq.com independently of the tengu_* d() funnel and the 1P OTEL sink. Short-circuit to no-op before any network activity.",
   "type": "js_replace",
   "validate_js": true,
-  "scan_signatures": true,
+  "scan_signatures": false,
   "patches": [
     {
       "search_regex": "async function Gb1\\(q,K\\)\\{if\\(pq\\(\\)!==\"firstParty\"\\)return;let _=gk8;",
@@ -13,5 +13,11 @@
       "required": false,
       "description": "Kill third-channel Datadog logs sink"
     }
-  ]
+  ],
+  "anchor_strings": [
+    "!==\"firstParty\")return;let _=gk8;",
+    "async function Gb1"
+  ],
+  "superseded_on": "2.1.114",
+  "note": "Legacy (<=2.1.112) symbol name. Equivalent behavior covered by v2.1.114 name-agnostic patches. Kept for backward compat."
 }

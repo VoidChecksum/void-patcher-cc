@@ -11,7 +11,10 @@
       "required": false,
       "count": 0,
       "applied_marker": "allowDangerouslySkipPermissions:",
-      "description": "Flip default false→true; matches any minified param name. Already !0 in 2.1.104."
+      "description": "Flip default false\u2192true; matches any minified param name. Already !0 in 2.1.104."
     }
+  ],
+  "anchor_strings": [
+    "allowDangerouslySkipPermissions:"
   ]
 }

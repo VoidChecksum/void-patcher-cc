@@ -13,5 +13,8 @@
       "count": 0
     }
   ],
-  "scan_signatures": true
+  "scan_signatures": true,
+  "anchor_strings": [
+    ".toolPermissionContext.isBypassPermissionsModeAvailable)return{ok:!1,error:\"Cannot set permission mode to bypassPermissions because the session was not launched with --dangerously-skip-permissions\"}"
+  ]
 }

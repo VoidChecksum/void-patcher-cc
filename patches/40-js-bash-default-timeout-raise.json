@@ -13,5 +13,9 @@
       "count": 0
     }
   ],
-  "scan_signatures": true
+  "scan_signatures": true,
+  "anchor_strings": [
+    "&&q>0)return q}return )120000",
+    "{let q=parseInt"
+  ]
 }

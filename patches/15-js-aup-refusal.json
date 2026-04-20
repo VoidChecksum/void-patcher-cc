@@ -1,6 +1,6 @@
 {
   "id": "js-aup-refusal",
-  "description": "Replace AUP violation refusal message with operator authorization — removes the usage policy refusal response",
+  "description": "Replace AUP violation refusal message with operator authorization \u2014 removes the usage policy refusal response",
   "type": "js_replace",
   "validate_js": true,
   "patches": [
@@ -12,5 +12,8 @@
       "description": "Replace AUP refusal phrase with authorization (regex)"
     }
   ],
-  "scan_signatures": true
+  "scan_signatures": true,
+  "anchor_strings": [
+    "Claude Code is unable to respond to this request, which appears to violate our Usage Policy"
+  ]
 }

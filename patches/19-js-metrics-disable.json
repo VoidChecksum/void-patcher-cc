@@ -1,11 +1,11 @@
 {
   "id": "js-metrics-disable",
-  "description": "Disable metrics/telemetry reporting to api.anthropic.com/api/claude_code/metrics — makes metrics check always return disabled without hitting the API",
+  "description": "Disable metrics/telemetry reporting to api.anthropic.com/api/claude_code/metrics \u2014 makes metrics check always return disabled without hitting the API",
   "type": "js_replace",
   "validate_js": true,
   "patches": [
     {
-      "search_regex": "(async function [A-Za-z_$][\\w$]*\\(\\)\\{)if\\([A-Za-z_$][\\w$]*\\(\\)\\)return\\{enabled:!1,hasError:!1\\};",
+      "search_regex": "mestamp:Date\\.[A-Za-z_$][\\w$]*\\(\\)\\}\\}\\)\\),[A-Za-z_$][\\w$]*\\}async\\ function\\ [A-Za-z_$][\\w$]*\\(\\)\\{[A-Za-z_$][\\w$]*\\([A-Za-z_$][\\w$]*\\(\\)\\&\\&![A-Za-z_$][\\w$]*\\(\\)\\)return\\{enabled:!1,hasError:!1\\};[A-Za-z_$][\\w$]*\\ [A-Za-z_$][\\w$]*=[A-Za-z_$][\\w$]*\\$\\(\\)\\.metricsStatusCache;[A-Za-z_$][\\w$]*\\([A-Za-z_$][\\w$]*\\)\\{[A-Za-z_$][\\w$]*\\(Date\\.[A-Za-z_$][\\w$]*\\(\\)\\-[A-Za-z_$][\\w$]*\\.timestam",
       "replace": "\\1return{enabled:!1,hasError:!1};if(!1)return{enabled:!1,hasError:!1};",
       "required": false,
       "count": 0,
@@ -18,8 +18,11 @@
       "required": false,
       "count": 0,
       "applied_marker": "async doExport(q,K){K({code:0});return;",
-      "description": "BigQuery doExport no-op — call success callback and return (regex, any doExport method)"
+      "description": "BigQuery doExport no-op \u2014 call success callback and return (regex, any doExport method)"
     }
   ],
-  "scan_signatures": true
+  "scan_signatures": true,
+  "anchor_strings": [
+    ")return{enabled:!1,hasError:!1};"
+  ]
 }

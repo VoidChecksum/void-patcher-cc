@@ -1,6 +1,6 @@
 {
   "id": "js-additional-protection",
-  "description": "Disable x-anthropic-additional-protection header — stops sending server-side content filter activation flag",
+  "description": "Disable x-anthropic-additional-protection header \u2014 stops sending server-side content filter activation flag",
   "type": "js_replace",
   "validate_js": true,
   "scan_signatures": true,
@@ -11,7 +11,10 @@
       "required": false,
       "count": 0,
       "applied_marker": "CLAUDE_CODE_ADDITIONAL_PROTECTION_VOID_DISABLED",
-      "description": "Never send x-anthropic-additional-protection header — rewrite env var to nonexistent name (regex, idempotent via negative lookahead)"
+      "description": "Never send x-anthropic-additional-protection header \u2014 rewrite env var to nonexistent name (regex, idempotent via negative lookahead)"
     }
+  ],
+  "anchor_strings": [
+    "process.env.CLAUDE_CODE_ADDITIONAL_PROTECTION"
   ]
 }

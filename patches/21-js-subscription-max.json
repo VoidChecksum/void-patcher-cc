@@ -1,6 +1,6 @@
 {
   "id": "js-subscription-max",
-  "description": "Pin client-side subscription check to 'max' — prevents feature downgrades from transient API failures, auth glitches, or plan-detection bugs. Requires an actual paid Max subscription; does not grant Max to non-paying accounts.",
+  "description": "Pin client-side subscription check to 'max' \u2014 prevents feature downgrades from transient API failures, auth glitches, or plan-detection bugs. Requires an actual paid Max subscription; does not grant Max to non-paying accounts.",
   "type": "js_replace",
   "validate_js": true,
   "scan_signatures": true,
@@ -11,7 +11,7 @@
       "required": false,
       "count": 0,
       "applied_marker": "return\"max\";if(!1)return null",
-      "description": "Subscription function always returns 'max' — prevents client-side downgrade (regex)"
+      "description": "Subscription function always returns 'max' \u2014 prevents client-side downgrade (regex)"
     },
     {
       "search_regex": "function ([A-Za-z_$][\\w$]*)\\(\\)\\{return [A-Za-z_$][\\w$]*\\(\\)===\"pro\"\\}",
@@ -19,7 +19,10 @@
       "required": false,
       "count": 0,
       "applied_marker": null,
-      "description": "Pro-tier check always false — removes pro restrictions (regex)"
+      "description": "Pro-tier check always false \u2014 removes pro restrictions (regex)"
     }
+  ],
+  "anchor_strings": [
+    ")return null;"
   ]
 }

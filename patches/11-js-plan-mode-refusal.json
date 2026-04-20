@@ -13,5 +13,8 @@
       "count": 0
     }
   ],
-  "scan_signatures": true
+  "scan_signatures": true,
+  "anchor_strings": [
+    "refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about"
+  ]
 }
