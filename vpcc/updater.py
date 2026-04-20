@@ -60,7 +60,7 @@ def load_state() -> dict[str, Any]:
     if not STATE_FILE.is_file():
         return {}
     try:
-        return json.loads(STATE_FILE.read_text())
+        return json.loads(STATE_FILE.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
         return {}
 
@@ -70,7 +70,7 @@ def save_state(**kwargs) -> None:
     s = load_state()
     s.update(kwargs)
     s["updated_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    STATE_FILE.write_text(json.dumps(s, indent=2))
+    STATE_FILE.write_text(json.dumps(s, indent=2), encoding="utf-8")
 
 
 # ── patch dir sync ───────────────────────────────────────────────────────────

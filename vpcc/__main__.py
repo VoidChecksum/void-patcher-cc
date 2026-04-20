@@ -26,6 +26,24 @@ BACKUP_DIR  = Path.home() / ".vpcc" / "backups"
 
 G, Y, R, B, X = "\033[32m", "\033[33m", "\033[31m", "\033[1m", "\033[0m"
 
+# ── console encoding safety (Windows cp1252) ─────────────────────────────────
+# Force UTF-8 on stdout/stderr so Unicode glyphs (✓ ✗ ⚠ →) don't crash the
+# process. Falls back to ASCII substitution when reconfigure is unavailable.
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
+except Exception:
+    pass
+
+_enc = (getattr(sys.stdout, "encoding", None) or "").lower()
+if "utf" not in _enc:
+    # ASCII-only fallbacks for legacy code pages (cp1252, cp437).
+    CHECK, CROSS, WARN_ICON, ARROW, DOT = "[ok]", "[X]", "[!]", "->", "*"
+    # Kill ANSI colour too — Windows legacy consoles may not render it.
+    G = Y = R = B = X = ""
+else:
+    CHECK, CROSS, WARN_ICON, ARROW, DOT = "✓", "✗", "⚠", "→", "·"
+
 _PKG = "@anthropic-ai/claude-code"
 _BUN_SECTION = ".bun"
 
@@ -452,9 +470,9 @@ def load_patches() -> list[dict[str, Any]]:
     patches = []
     for f in sorted(PATCH_DIR.glob("*.json")):
         try:
-            patches.append(json.loads(f.read_text()))
+            patches.append(json.loads(f.read_text(encoding="utf-8")))
         except json.JSONDecodeError as e:
-            print(f"{R}✗ {f.name}: invalid JSON — {e}{X}", file=sys.stderr)
+            print(f"{R}{CROSS} {f.name}: invalid JSON — {e}{X}", file=sys.stderr)
     return patches
 
 
@@ -601,7 +619,7 @@ def cmd_patch(args) -> int:
                 if r.returncode != 0:
                     tmp.unlink(missing_ok=True)
                     err = (r.stderr or r.stdout or "").strip().splitlines()[-1:]
-                    print(f"\n{R}✗ cli.js syntax INVALID — aborted, original untouched{X}")
+                    print(f"\n{R}{CROSS} cli.js syntax INVALID — aborted, original untouched{X}")
                     if err:
                         print(f"  node: {err[0][:180]}")
                     return 2
@@ -612,7 +630,7 @@ def cmd_patch(args) -> int:
                 os.replace(tmp, target)   # atomic on same filesystem
             except Exception as e:
                 tmp.unlink(missing_ok=True)
-                print(f"\n{R}✗ write failed: {e} — cli.js untouched{X}")
+                print(f"\n{R}{CROSS} write failed: {e} — cli.js untouched{X}")
                 return 2
 
     # ── non-JS patches ─────────────────────────────────────────────────────
@@ -628,7 +646,7 @@ def cmd_patch(args) -> int:
             print(f"  {Y}skip{X} {p['id']:40s}  type={t} (use void-patcher for full support)")
             skip += 1
 
-    print(f"\n{B}{ok} ok · {fail} failed · {skip} skipped{X}")
+    print(f"\n{B}{ok} ok {DOT} {fail} failed {DOT} {skip} skipped{X}")
 
     # record state for autoheal drift detection
     if target and not args.dry_run and not fail:
@@ -644,7 +662,7 @@ def _apply_settings(patch: dict, dry_run: bool = False) -> tuple[bool, str]:
     path = Path(os.path.expanduser(patch.get("settings_path", "~/.claude/settings.json")))
     path.parent.mkdir(parents=True, exist_ok=True)
     try:
-        cur = json.loads(path.read_text()) if path.is_file() else {}
+        cur = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
     except json.JSONDecodeError:
         cur = {}
     wanted = patch.get("settings", {})
@@ -661,7 +679,7 @@ def _apply_settings(patch: dict, dry_run: bool = False) -> tuple[bool, str]:
         return True, "no-op (already applied)"
     if dry_run:
         return True, f"would set {changed} key(s)"
-    path.write_text(json.dumps(out, indent=2))
+    path.write_text(json.dumps(out, indent=2), encoding="utf-8")
     return True, f"{changed} key(s)"
 
 
@@ -692,14 +710,14 @@ def cmd_verify(args) -> int:
                 continue
             marker = sub.get("applied_marker")
             if marker and marker not in text:
-                print(f"{R}✗{X} {p['id']}")
+                print(f"{R}{CROSS}{X} {p['id']}")
                 missing += 1
                 break
 
     if missing:
         print(f"\n{R}{missing} patches missing{X}")
         return 1
-    print(f"{G}✓ all patches verified{X}")
+    print(f"{G}{CHECK} all patches verified{X}")
     return 0
 
 
@@ -717,7 +735,7 @@ def cmd_rollback(args) -> int:
     target.unlink()
     shutil.copy2(latest, target)
     target.chmod(mode)
-    print(f"{G}✓ restored{X} {target} ← {latest.name}")
+    print(f"{G}{CHECK} restored{X} {target} <- {latest.name}")
     return 0
 
 
@@ -747,7 +765,7 @@ def cmd_list(args) -> int:
 
 def cmd_self_update(args) -> int:
     """Pull latest patches/*.json from GitHub."""
-    print(f"{B}vpcc self-update{X}  ← {_updater.REPO}@{_updater.BRANCH}")
+    print(f"{B}vpcc self-update{X}  <- {_updater.REPO}@{_updater.BRANCH}")
     remote = _updater.remote_head_sha("patches")
     if not remote:
         print(f"{R}could not reach GitHub API{X}")
@@ -757,16 +775,16 @@ def cmd_self_update(args) -> int:
     print(f"  local  : {local or '(unknown)'}")
     print(f"  remote : {remote}")
     if local == remote and not args.force:
-        print(f"{G}✓ already up to date{X}")
+        print(f"{G}{CHECK} already up to date{X}")
         return 0
     if args.dry_run:
         print(f"{Y}dry-run: would sync{X}")
         return 0
     changed, sha_or_err = _updater.sync_patches(PATCH_DIR, remote)
     if changed < 0:
-        print(f"{R}✗ sync failed — {sha_or_err}{X}")
+        print(f"{R}{CROSS} sync failed — {sha_or_err}{X}")
         return 2
-    print(f"{G}✓ synced{X}  {changed} file(s) updated @ {sha_or_err[:7]}")
+    print(f"{G}{CHECK} synced{X}  {changed} file(s) updated @ {sha_or_err[:7]}")
     if changed and not args.no_reapply:
         print(f"\n{B}re-applying patches{X}")
         class _P: dry_run = False
@@ -856,10 +874,13 @@ def cmd_doctor(args) -> int:
         text = _scanner.load_text_from_target(target, kind)
         rows = _scanner.SigScanner(text).scan_patches(_scanner.load_patches_from_dir(PATCH_DIR))
         drift = [r["id"] for r in rows if r["status"] == "drift"]
+        nometa = [r["id"] for r in rows if r["status"] == "unclassified"]
         if drift:
-            print(f"  {Y}sig drift  : {len(drift)} patches — {', '.join(drift[:3])}{'...' if len(drift) > 3 else ''}{X}")
+            print(f"  {R}sig drift  : {len(drift)} patches {DOT} {', '.join(drift[:3])}{'...' if len(drift) > 3 else ''}{X}")
         else:
             print(f"  {G}sig drift  : 0 (all anchors locatable){X}")
+        if nometa:
+            print(f"  {Y}sig nometa : {len(nometa)} patches (pre-v2.1.114, no anchor_strings yet){X}")
     except Exception as e:
         print(f"  {R}sig scan   : failed — {e}{X}")
 
@@ -943,7 +964,7 @@ def cmd_install_preload(args) -> int:
     dst = dst_dir / "claude-preload.js"
     dst.write_bytes(src.read_bytes())
     dst.chmod(0o644)
-    print(f"{G}✓ installed preload{X}  {src.name} → {dst}")
+    print(f"{G}{CHECK} installed preload{X}  {src.name} {ARROW} {dst}")
     print(f"  wrapper will auto-load via BUN_OPTIONS=--preload on next run")
     return 0
 
@@ -952,7 +973,7 @@ def cmd_uninstall_preload(args) -> int:
     dst = Path.home() / ".local/share/void-patcher/claude-preload.js"
     if dst.exists():
         dst.unlink()
-        print(f"{G}✓ removed{X} {dst}")
+        print(f"{G}{CHECK} removed{X} {dst}")
     else:
         print(f"{Y}not installed{X}")
     return 0
@@ -966,13 +987,13 @@ def cmd_check_updates(args) -> int:
     print(f"  remote commit : {info['remote_commit'] or '(unreachable)'}")
     print(f"  local files   : {info['local_files']}")
     if info["drift"]:
-        print(f"{Y}⚠ update available — run 'vpcc self-update'{X}")
+        print(f"{Y}{WARN_ICON} update available — run 'vpcc self-update'{X}")
         return 1
     if not info["local_commit"] and info["remote_commit"]:
-        print(f"{Y}⚠ no sync state — run 'vpcc self-update' to pin current{X}")
+        print(f"{Y}{WARN_ICON} no sync state — run 'vpcc self-update' to pin current{X}")
         return 1
     if info["remote_commit"]:
-        print(f"{G}✓ up to date{X}")
+        print(f"{G}{CHECK} up to date{X}")
     return 0
 
 

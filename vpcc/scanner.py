@@ -90,10 +90,14 @@ class SigScanner:
                 except re.error:
                     regex_hit = False
 
-            status = (
-                "ok" if (regex_hit or (anchors and anchor_off is not None))
-                else "drift"
-            )
+            if regex_hit or (anchors and anchor_off is not None):
+                status = "ok"
+            elif not anchors and not regex_hit:
+                # Pre-metadata patch (no anchor_strings yet) — cannot be
+                # classified as drift without a locator. Distinguish it.
+                status = "unclassified"
+            else:
+                status = "drift"
             out.append({
                 "id": pid,
                 "anchors": anchors,
@@ -122,18 +126,25 @@ def load_text_from_target(target: Path, kind: str) -> str:
 def format_scan_report(rows: list[dict[str, Any]], verbose: bool = False) -> str:
     G, Y, R, X = "\033[32m", "\033[33m", "\033[31m", "\033[0m"
     lines = []
-    ok = drift = 0
+    ok = drift = unclassified = 0
     for r in rows:
-        mark = f"{G}ok{X}" if r["status"] == "ok" else f"{R}drift{X}"
-        ok += r["status"] == "ok"
-        drift += r["status"] == "drift"
+        status = r["status"]
+        if status == "ok":
+            mark = f"{G}ok{X}"; ok += 1
+        elif status == "drift":
+            mark = f"{R}drift{X}"; drift += 1
+        else:
+            mark = f"{Y}nometa{X}"; unclassified += 1
         off = r["anchor_offset"]
         off_s = f"@0x{off:08x}" if off is not None else "--"
-        line = f"  {mark:20s}  {r['id']:42s}  {off_s:>14s}  regex={'Y' if r['regex_hit'] else 'N'}"
+        line = f"  {mark:22s}  {r['id']:42s}  {off_s:>14s}  regex={'Y' if r['regex_hit'] else 'N'}"
         lines.append(line)
         if verbose and r["anchors"]:
             lines.append(f"    anchors: {', '.join(r['anchors'])}")
-    lines.append(f"\n  {ok} ok · {Y}{drift} drift{X}")
+    tail = f"\n  {G}{ok} ok{X}"
+    if drift:        tail += f"  {R}{drift} drift{X}"
+    if unclassified: tail += f"  {Y}{unclassified} nometa{X} (pre-v2.1.114 patches — anchor_strings not yet backfilled)"
+    lines.append(tail)
     return "\n".join(lines)
 
 
@@ -141,7 +152,7 @@ def load_patches_from_dir(patch_dir: Path) -> list[dict[str, Any]]:
     out = []
     for f in sorted(patch_dir.glob("*.json")):
         try:
-            obj = json.loads(f.read_text())
+            obj = json.loads(f.read_text(encoding="utf-8"))
             if obj.get("type") == "js_replace":
                 obj["__file"] = str(f)
                 out.append(obj)
@@ -190,7 +201,7 @@ def auto_heal_drift(text: str, patch_dir: Path, verbose: bool = False) -> dict[s
         sub["search_regex"] = new_regex
         sub.setdefault("replace", new_regex)  # identity replace is safer than nothing
         file_path = Path(p.pop("__file"))
-        file_path.write_text(json.dumps(p, indent=2) + "\n")
+        file_path.write_text(json.dumps(p, indent=2) + "\n", encoding="utf-8")
         if verbose:
             print(f"  healed {p['id']} @ 0x{anchor_off:x}")
         healed += 1
