@@ -21,7 +21,7 @@
 [![vpcc](https://img.shields.io/badge/vpcc-v2.1.119-00D4FF?style=for-the-badge&logo=gnubash&logoColor=white&labelColor=0D1117)](https://github.com/VoidChecksum/void-patcher-cc/releases)
 [![patches](https://img.shields.io/badge/patches-96-FF6B9D?style=for-the-badge&logo=codeigniter&logoColor=white&labelColor=0D1117)](patches/)
 [![target](https://img.shields.io/badge/claude--code-v2.1.119-F97316?style=for-the-badge&logo=anthropic&logoColor=white&labelColor=0D1117)](https://www.npmjs.com/package/@anthropic-ai/claude-code)
-[![format](https://img.shields.io/badge/format-ELF_.bun_%2B_cli.js-9C27B0?style=for-the-badge&logo=bun&logoColor=white&labelColor=0D1117)](https://bun.sh)
+[![format](https://img.shields.io/badge/format-ELF_active--bundle_%2B_VFS-9C27B0?style=for-the-badge&logo=bun&logoColor=white&labelColor=0D1117)](https://bun.sh)
 [![license](https://img.shields.io/badge/GPL--3.0-blue?style=for-the-badge&logo=gnu&logoColor=white&labelColor=0D1117)](LICENSE)
 
 [![idempotent](https://img.shields.io/badge/idempotent-100%25-3FB950?style=flat-square&labelColor=0D1117)]()
@@ -29,6 +29,7 @@
 [![auto--heal](https://img.shields.io/badge/auto--heal-on-1F6FEB?style=flat-square&labelColor=0D1117)]()
 [![preload--hook](https://img.shields.io/badge/preload--hook-runtime-E9D900?style=flat-square&labelColor=0D1117)]()
 [![verify](https://img.shields.io/badge/verify-atomic_rollback-FF4F4F?style=flat-square&labelColor=0D1117)]()
+[![vfs--aware](https://img.shields.io/badge/vfs--aware-2.1.119-B866E0?style=flat-square&labelColor=0D1117)]()
 [![python](https://img.shields.io/badge/python-%E2%89%A53.9-3776AB?style=flat-square&logo=python&logoColor=white&labelColor=0D1117)]()
 
 <h1>⚡ vpcc — Void Patcher for Claude Code</h1>
