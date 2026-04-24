@@ -30,10 +30,17 @@ have_real_cc() {
     # accept if the resolved path runs and prints a version line
     claude --version 2>/dev/null | grep -qE 'Claude Code|claude-code' && return 0
     # fallback: file size check on known native install paths
-    for p in "$HOME/.claude/local/claude" "$HOME/.claude/bin/claude" \
+    for p in "$HOME/.local/bin/claude" \
+             "$HOME/.claude/local/claude" "$HOME/.claude/bin/claude" \
              "/opt/claude-code/bin/claude" "/usr/local/bin/claude"; do
         [ -x "$p" ] && [ "$(stat -c%s "$p" 2>/dev/null || stat -f%z "$p" 2>/dev/null || echo 0)" -gt 1000000 ] && return 0
     done
+    # also check ~/.local/share/claude/versions/ (current native installer layout)
+    if [ -d "$HOME/.local/share/claude/versions" ]; then
+        for p in "$HOME/.local/share/claude/versions/"*; do
+            [ -x "$p" ] && [ "$(stat -c%s "$p" 2>/dev/null || stat -f%z "$p" 2>/dev/null || echo 0)" -gt 1000000 ] && return 0
+        done
+    fi
     return 1
 }
 if have_real_cc; then

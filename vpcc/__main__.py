@@ -131,13 +131,27 @@ def find_target() -> tuple[Path | None, str]:
                 return p, kind
 
     # Native installer (https://claude.ai/install.sh) lands the binary in
-    # ~/.claude/ or ~/.local/share/claude-code/. Enumerate common targets.
+    # ~/.local/share/claude/versions/<semver> (symlinked from ~/.local/bin/claude)
+    # as well as older ~/.claude/ and ~/.local/share/claude-code/ layouts.
+
+    # Current layout (≥ 2.1.x native installer): ~/.local/share/claude/versions/<semver>
+    claude_versions_dir = Path.home() / ".local/share/claude/versions"
+    if claude_versions_dir.is_dir():
+        for child in sorted(claude_versions_dir.iterdir(), reverse=True):
+            if child.is_file() and child.stat().st_size > 1_000_000:
+                return child, "bun_sea"
+
     native_candidates = [
+        # Current native installer symlink — resolve so we return the real file
+        Path.home() / ".local/bin/claude",
+        Path.home() / ".local/bin/claude.exe",
+        # Legacy ~/.claude/ layout
         Path.home() / ".claude/local/claude",
         Path.home() / ".claude/local/claude.exe",
         Path.home() / ".claude/bin/claude",
         Path.home() / ".claude/bin/claude.exe",
         Path.home() / ".claude/downloads",          # may contain claude-<ver>-<platform> blobs
+        # Old claude-code name layout
         Path.home() / ".local/share/claude-code/claude",
         Path.home() / ".local/share/claude-code/claude.exe",
         Path.home() / ".local/bin/claude-code",
@@ -153,7 +167,8 @@ def find_target() -> tuple[Path | None, str]:
                     return child, "bun_sea"
             continue
         if p.exists() and p.stat().st_size > 1_000_000:
-            return p, "bun_sea"
+            # Resolve symlinks so we return the real file path
+            return p.resolve(), "bun_sea"
 
     # Windows %LOCALAPPDATA%\Programs\claude-code\ (installer default on Win)
     la = os.environ.get("LOCALAPPDATA")
@@ -164,6 +179,16 @@ def find_target() -> tuple[Path | None, str]:
             p = Path(la) / suffix
             if p.exists() and p.stat().st_size > 1_000_000:
                 return p, "bun_sea"
+
+    # Last resort: resolve `which claude` from PATH
+    try:
+        r = subprocess.run(["which", "claude"], capture_output=True, text=True, timeout=5)
+        if r.returncode == 0 and r.stdout.strip():
+            p = Path(r.stdout.strip()).resolve()
+            if p.exists() and p.stat().st_size > 1_000_000:
+                return p, "bun_sea"
+    except Exception:
+        pass
 
     return None, ""
 
