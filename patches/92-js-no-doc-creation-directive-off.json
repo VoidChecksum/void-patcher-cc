@@ -1,0 +1,30 @@
+{
+  "id": "js-no-doc-creation-directive-off",
+  "description": "Remove the 'NEVER create documentation files (*.md) or README files unless explicitly requested' directive hardcoded in the Write tool system prompt. User has blanket authorization; this directive blocks legitimate doc-generation workflows.",
+  "type": "js_replace",
+  "validate_js": true,
+  "scan_signatures": true,
+  "patches": [
+    {
+      "search_regex": "- NEVER create documentation files \\(\\*\\.md\\) or README files unless explicitly requested by the User\\.",
+      "replace": "- Documentation files (*.md) are allowed when helpful./*vdoc1*/                                   ",
+      "applied_marker": "/*vdoc1*/",
+      "description": "Remove anti-docs directive in Write tool prompt",
+      "required": false,
+      "count": 0
+    },
+    {
+      "search_regex": "- NEVER proactively create documentation files \\(\\*\\.md\\) or README files\\. Only create documentation files if explicitly requested\\.",
+      "replace": "- Documentation files (*.md) are allowed when helpful./*vdoc2*/                                                              ",
+      "applied_marker": "/*vdoc2*/",
+      "description": "Remove anti-docs directive in general-purpose agent prompt",
+      "required": false,
+      "count": 0
+    }
+  ],
+  "anchor_strings": [
+    "NEVER create documentation files",
+    "NEVER proactively create documentation files"
+  ],
+  "version_last_tested": "2.1.119"
+}

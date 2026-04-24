@@ -1,0 +1,21 @@
+{
+  "id": "js-verified-vs-assumed-on",
+  "description": "Flip tengu_verified_vs_assumed gate default to true — makes Claude emit the 'distinguish verified vs assumed, do not assert assumptions as facts' system-prompt clause on every turn. Useful for RE/audit work where hallucinated claims are costly.",
+  "type": "js_replace",
+  "validate_js": true,
+  "scan_signatures": true,
+  "patches": [
+    {
+      "search_regex": "k\\$\\(\"tengu_verified_vs_assumed\",!1\\)",
+      "replace": "k$(\"tengu_verified_vs_assumed\",!0)",
+      "applied_marker": "tengu_verified_vs_assumed\",!0)",
+      "description": "verified-vs-assumed default true",
+      "required": false,
+      "count": 0
+    }
+  ],
+  "anchor_strings": [
+    "tengu_verified_vs_assumed"
+  ],
+  "version_last_tested": "2.1.119"
+}

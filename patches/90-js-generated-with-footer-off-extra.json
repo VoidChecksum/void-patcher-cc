@@ -1,0 +1,29 @@
+{
+  "id": "js-generated-with-footer-off-extra",
+  "description": "Patch 44 only neutralizes the first attribution template. Blank the other two 'Generated with [Claude Code]' template-literal sites — one in the PR body builder, one in the summary/memory-recalled footer — so all git artifacts are author-less.",
+  "type": "js_replace",
+  "validate_js": true,
+  "scan_signatures": true,
+  "patches": [
+    {
+      "search_regex": "let q=`\\\\uD83E\\\\uDD16 Generated with \\[Claude Code\\]\\(\\$\\{MLH\\}\\)`,K=H\\(\\);",
+      "replace": "let q=``/*vnof2*/                                        ,K=H();",
+      "applied_marker": "/*vnof2*/",
+      "description": "Blank 2nd PR body footer template",
+      "required": false,
+      "count": 0
+    },
+    {
+      "search_regex": "w=`\\\\uD83E\\\\uDD16 Generated with \\[Claude Code\\]\\(\\$\\{MLH\\}\\) \\(\\$\\{Y\\}% \\$\\{A\\}-shotted by \\$\\{M\\}\\$\\{D\\}\\)`;",
+      "replace": "w=``/*vnof3*/                                                                    ;",
+      "applied_marker": "/*vnof3*/",
+      "description": "Blank summary/memory-recalled footer template",
+      "required": false,
+      "count": 0
+    }
+  ],
+  "anchor_strings": [
+    "Generated with [Claude Code]"
+  ],
+  "version_last_tested": "2.1.119"
+}

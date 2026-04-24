@@ -1,0 +1,21 @@
+{
+  "id": "js-bypass-permissions-async-kill-v2_1_119",
+  "description": "v2.1.119 symbol rename: async function that calls pK(1,'bypass_permissions_disabled') and process-exits when Anthropic flips tengu_disable_bypass_permissions_mode. Neutralize by turning body into early-return. Name-agnostic regex.",
+  "type": "js_replace",
+  "validate_js": true,
+  "scan_signatures": true,
+  "patches": [
+    {
+      "search_regex": "(async function [A-Za-z_$][\\w$]*\\(H\\)\\{)if\\(!H\\.isBypassPermissionsModeAvailable\\)return;if\\(!await n88\\(\\)\\)return;y\\(\"bypassPermissions mode is being disabled by feature gate \\(async check\\)\",",
+      "replace": "\\1return/*__void_bp119_async__*/;if(0);if(0)y(\"bypassPermissions mode is being disabled by feature gate (async check)\",",
+      "applied_marker": "__void_bp119_async__",
+      "description": "async bypass-permissions-kill no-op",
+      "required": false,
+      "count": 0
+    }
+  ],
+  "anchor_strings": [
+    "bypassPermissions mode is being disabled by feature gate (async check)"
+  ],
+  "version_last_tested": "2.1.119"
+}

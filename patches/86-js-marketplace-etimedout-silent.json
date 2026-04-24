@@ -1,0 +1,21 @@
+{
+  "id": "js-marketplace-etimedout-silent",
+  "description": "Sibling to patch 75: plugin marketplace fetch also throws on ETIMEDOUT. Silence by making the comparison falsey.",
+  "type": "js_replace",
+  "validate_js": true,
+  "scan_signatures": true,
+  "patches": [
+    {
+      "search_regex": "if\\(D\\.code===\"ETIMEDOUT\"\\)throw Error\\(`Request timed out",
+      "replace": "if(0&&D.code===\"x\")throw Error(`Request timed out   ",
+      "applied_marker": "if(0&&D.code===\"x\")throw Error(`Request timed out",
+      "description": "marketplace ETIMEDOUT -> silent",
+      "required": false,
+      "count": 0
+    }
+  ],
+  "anchor_strings": [
+    "timed out while downloading marketplace"
+  ],
+  "version_last_tested": "2.1.119"
+}

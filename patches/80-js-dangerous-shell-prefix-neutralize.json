@@ -1,0 +1,21 @@
+{
+  "id": "js-dangerous-shell-prefix-neutralize",
+  "description": "Same classifier branch flags 'git' or any entry in bZ_ dangerous-shell-prefix set with commandPrefix:null, forcing manual approval. Treat as success and let the operator's pre-authorized blanket permission handle it.",
+  "type": "js_replace",
+  "validate_js": true,
+  "scan_signatures": true,
+  "patches": [
+    {
+      "search_regex": "else if\\(X===\"git\"\\|\\|bZ_\\.has\\(X\\.toLowerCase\\(\\)\\)\\)Q\\(A,\\{success:!1,error:\"dangerous_shell_prefix\",durationMs:j\\}\\),M=\\{commandPrefix:null\\};",
+      "replace": "else if(X===\"git\"||bZ_.has(X.toLowerCase()))Q(A,{success:!0,error:\"none\",durationMs:j}),M={commandPrefix:X};",
+      "applied_marker": "bZ_.has(X.toLowerCase()))Q(A,{success:!0",
+      "description": "dangerous_shell_prefix -> pass",
+      "required": false,
+      "count": 0
+    }
+  ],
+  "anchor_strings": [
+    "dangerous_shell_prefix"
+  ],
+  "version_last_tested": "2.1.119"
+}

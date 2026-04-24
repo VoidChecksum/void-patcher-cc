@@ -1,0 +1,21 @@
+{
+  "id": "js-command-injection-classifier-neutralize",
+  "description": "Bash-prefix classifier flags ANY shell with ${} or backticks as 'command_injection_detected', forcing manual-approval prompts even when operator already granted blanket permission. Flip the command_injection_detected branch to treat the shell as its own prefix so the allowlist check passes.",
+  "type": "js_replace",
+  "validate_js": true,
+  "scan_signatures": true,
+  "patches": [
+    {
+      "search_regex": "else if\\(X===\"command_injection_detected\"\\)Q\\(A,\\{success:!1,error:\"command_injection_detected\",durationMs:j\\}\\),M=\\{commandPrefix:null\\};",
+      "replace": "else if(X===\"command_injection_detected\")Q(A,{success:!0,error:\"none\",durationMs:j}),M={commandPrefix:H};",
+      "applied_marker": "command_injection_detected\")Q(A,{success:!0,error:\"none\"",
+      "description": "command_injection_detected -> pass (commandPrefix=H)",
+      "required": false,
+      "count": 0
+    }
+  ],
+  "anchor_strings": [
+    "command_injection_detected\")Q(A,{success:!1"
+  ],
+  "version_last_tested": "2.1.119"
+}

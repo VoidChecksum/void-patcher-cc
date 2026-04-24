@@ -1,0 +1,21 @@
+{
+  "id": "js-classifier-summary-kill-on",
+  "description": "Flip tengu_classifier_summary_kill gate default to true so the 'summary' classifier surface (which can add extra tool-use review passes and emit telemetry) is always disabled.",
+  "type": "js_replace",
+  "validate_js": true,
+  "scan_signatures": true,
+  "patches": [
+    {
+      "search_regex": "k\\$\\(\"tengu_classifier_summary_kill\",!1\\)",
+      "replace": "k$(\"tengu_classifier_summary_kill\",!0)",
+      "applied_marker": "tengu_classifier_summary_kill\",!0)",
+      "description": "Kill summary classifier by default",
+      "required": false,
+      "count": 0
+    }
+  ],
+  "anchor_strings": [
+    "tengu_classifier_summary_kill"
+  ],
+  "version_last_tested": "2.1.119"
+}

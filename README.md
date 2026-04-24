@@ -18,9 +18,9 @@
 
 <!-- Custom theme: electric cyan (#00D4FF) primary, neon pink (#FF6B9D) accent, deep space dark #0D1117 bg -->
 
-[![vpcc](https://img.shields.io/badge/vpcc-v2.1.118-00D4FF?style=for-the-badge&logo=gnubash&logoColor=white&labelColor=0D1117)](https://github.com/VoidChecksum/void-patcher-cc/releases)
-[![patches](https://img.shields.io/badge/patches-77-FF6B9D?style=for-the-badge&logo=codeigniter&logoColor=white&labelColor=0D1117)](patches/)
-[![target](https://img.shields.io/badge/claude--code-v2.1.118-F97316?style=for-the-badge&logo=anthropic&logoColor=white&labelColor=0D1117)](https://www.npmjs.com/package/@anthropic-ai/claude-code)
+[![vpcc](https://img.shields.io/badge/vpcc-v2.1.119-00D4FF?style=for-the-badge&logo=gnubash&logoColor=white&labelColor=0D1117)](https://github.com/VoidChecksum/void-patcher-cc/releases)
+[![patches](https://img.shields.io/badge/patches-96-FF6B9D?style=for-the-badge&logo=codeigniter&logoColor=white&labelColor=0D1117)](patches/)
+[![target](https://img.shields.io/badge/claude--code-v2.1.119-F97316?style=for-the-badge&logo=anthropic&logoColor=white&labelColor=0D1117)](https://www.npmjs.com/package/@anthropic-ai/claude-code)
 [![format](https://img.shields.io/badge/format-ELF_.bun_%2B_cli.js-9C27B0?style=for-the-badge&logo=bun&logoColor=white&labelColor=0D1117)](https://bun.sh)
 [![license](https://img.shields.io/badge/GPL--3.0-blue?style=for-the-badge&logo=gnu&logoColor=white&labelColor=0D1117)](LICENSE)
 
@@ -33,7 +33,7 @@
 
 <h1>⚡ vpcc — Void Patcher for Claude Code</h1>
 
-<strong>77 reverse-engineered hardening patches · 3-layer defense · survives every CC update</strong><br>
+<strong>96 reverse-engineered hardening patches · 3-layer defense · survives every CC update</strong><br>
 <sub>cli.js (≤ 2.1.112) &nbsp;·&nbsp; Bun SEA ELF (≥ 2.1.114) &nbsp;·&nbsp; runtime preload hook &nbsp;·&nbsp; auto-heal scanner</sub>
 
 </div>
@@ -56,7 +56,7 @@ curl -fsSL https://raw.githubusercontent.com/VoidChecksum/void-patcher-cc/main/i
 irm https://raw.githubusercontent.com/VoidChecksum/void-patcher-cc/main/install.ps1 | iex
 ```
 
-Chains on top of Anthropic's official installer, then applies 77 patches, deploys the runtime preload hook, and (Linux) enables the systemd auto-heal timer.
+Chains on top of Anthropic's official installer, then applies 96 patches, deploys the runtime preload hook, and (Linux) enables the systemd auto-heal timer.
 
 Every permission prompt · refusal · AUP gate · classifier · telemetry sink **off**.
 Every CC upgrade **auto-heals**.
@@ -69,8 +69,8 @@ Every CC upgrade **auto-heals**.
 - [How it works](#-how-it-works) · [Why it survives](#-why-it-survives-every-update)
 - [Compat matrix](#-compatibility-matrix) · [Install](#-install)
 - [Usage](#-usage) · [AUP bypass stack](#-aup-bypass-stack)
-- [Byte offsets · v2.1.118](#-byte-offsets--v21118-ref-build)
-- [Patch catalog](#-patch-catalog-77-total) · [Architecture](#-architecture)
+- [Byte offsets · v2.1.119](#-byte-offsets--v21119-ref-build)
+- [Patch catalog](#-patch-catalog-96-total) · [Architecture](#-architecture)
 - [Auto-update flow](#-auto-update-flow)
 - [Manual RE · r2 / pwndbg / rg](#-manual-offset-discovery--r2--pwndbg--rg)
 - [Troubleshooting](#-troubleshooting) · [Scope](#-security--scope)
@@ -92,7 +92,7 @@ Every CC upgrade **auto-heals**.
    'tertiaryColor':'#FF6B9D','fontFamily':'JetBrains Mono'}}}%%
 flowchart LR
     NPM[npm -g<br/>@anthropic-ai/claude-code] -->|236 MB SEA or 26 MB cli.js| TGT[target binary]
-    TGT --> SIG{77 regex<br/>signatures}
+    TGT --> SIG{96 regex<br/>signatures}
     SIG -->|match| BYTE[byte-patch<br/>in-place]
     BYTE --> VER{verify<br/>--version}
     VER -->|ok| SWAP[atomic swap]
@@ -114,7 +114,7 @@ flowchart LR
 ```
           ┌─────────────── 3-LAYER DEFENSE ──────────────┐
           │                                              │
- layer 1  ▶  .bun ELF byte-patches   (77 regex sigs)    ◀
+ layer 1  ▶  .bun ELF byte-patches   (96 regex sigs)    ◀
  layer 2  ▶  Bun --preload hook      (JS runtime shims) ◀
  layer 3  ▶  auto-heal sig-scanner   (regex regen)      ◀
           │                                              │
@@ -144,6 +144,23 @@ When ② drifts, `vpcc scan --auto-heal` rewrites it from ①'s context window. 
 
 ---
 
+### 2.1.119 layout change
+
+Starting at **Claude Code 2.1.119**, the `.bun` ELF section embeds **two** copies of the entry JS bundle:
+
+```
+[header][active-entry-blob ~13 MB][bytecode-cache ~102 MB]
+[lookup-key\x00][vfs-path\x00][vfs-copy-of-cli.js ~13 MB][other-vfs-files][trailer]
+```
+
+Bun re-parses the **VFS copy** at startup for module resolution. Patching both copies (as pre-2.1.119 vpcc did) corrupts the VFS bundle and fails with an opaque `entry.instantiate` crash inside Bun's ESM linker.
+
+`vpcc ≥ 2.1.119` adds `_find_active_bundle_bounds()`: locates the `// @bun @bytecode` marker, reads the u32 blob length at `marker-4`, and restricts all `search_regex` writes to `[marker, marker + blob_size)`. VFS copy stays pristine, Bun loads cleanly.
+
+Falls back to the full section on older (single-bundle) builds.
+
+---
+
 ## 🧬 Compatibility matrix
 
 <div align="center">
@@ -151,10 +168,11 @@ When ② drifts, `vpcc scan --auto-heal` rewrites it from ①'s context window. 
 | CC version      | Format               | OS support                 | Size   | Coverage | AUP bypass | Status      |
 |:---------------:|:--------------------:|:--------------------------:|-------:|---------:|:----------:|:-----------:|
 | 2.0.x           | `cli.js` (Node)      | Lin · mac · Win · WSL      |  20 MB | 62 / 77  | ✅          | legacy      |
-| 2.1.0 – 2.1.112 | `cli.js` (Node)      | Lin · mac · Win · WSL      |  26 MB | 70 / 77  | ✅          | stable      |
-| 2.1.114 – 2.1.117 | Bun SEA (ELF / Mach-O / PE) | Lin · mac (x64/arm64) · Win (x64/arm64) · WSL | 236 MB | **77/77** | ✅ | stable      |
-| **2.1.118**     | **Bun SEA (ELF / Mach-O / PE)** | **Lin · mac (x64/arm64) · Win (x64/arm64) · WSL** | 236 MB | **77/77** | ✅ | **current** |
-| 2.1.119+        | Bun SEA (expected)   | all                        |   —    | auto-heal| ✅          | watch mode  |
+| 2.1.0 – 2.1.112 | `cli.js` (Node)      | Lin · mac · Win · WSL      |  26 MB | 70 / 77  | ✅          | legacy      |
+| 2.1.114 – 2.1.117 | Bun SEA (ELF / Mach-O / PE) | Lin · mac (x64/arm64) · Win (x64/arm64) · WSL | 236 MB | 77 / 77  | ✅ | stable      |
+| 2.1.118         | Bun SEA (ELF / Mach-O / PE) | Lin · mac (x64/arm64) · Win (x64/arm64) · WSL | 236 MB | 77 / 77  | ✅ | stable      |
+| **2.1.119**     | **Bun SEA (active-bundle + VFS-copy)** | **Lin · mac (x64/arm64) · Win (x64/arm64) · WSL** | 233 MB | **96/96** | ✅ | **current** |
+| 2.1.120+        | Bun SEA (expected)   | all                        |   —    | auto-heal| ✅          | watch mode  |
 
 </div>
 
@@ -231,7 +249,7 @@ pipx uninstall vpcc
 
 | Command                          | Purpose                                                                         |
 |----------------------------------|---------------------------------------------------------------------------------|
-| `vpcc patch` `[-n]`              | Apply all 77 patches. Idempotent, atomic, verified.                             |
+| `vpcc patch` `[-n]`              | Apply all 96 patches. Idempotent, atomic, verified.                             |
 | `vpcc verify`                    | Every `applied_marker` present?                                                 |
 | `vpcc scan` `[-v]`               | 🔬 Sig-scan — anchor offsets + regex hit.                                       |
 | `vpcc scan --auto-heal`          | 💊 Regenerate drifted regexes in `patches/*.json`.                              |
@@ -253,12 +271,12 @@ pipx uninstall vpcc
 ```text
 $ vpcc doctor
 vpcc doctor
-  vpcc ver   : 2.1.118
-  patches    : 77
+  vpcc ver   : 2.1.119
+  patches    : 96
   target     : .../claude-code-linux-x64/claude
   format     : Bun SEA ELF
-  sha256     : 12bd4b0916de
-  size       : 225 MB
+  sha256     : 372814218070
+  size       : 233 MB
   sig drift  : 0 (all anchors locatable)
   applied    : all
   backups    : 3
@@ -337,10 +355,12 @@ function s5K(H,$,q){
 
 ---
 
-## 🧭 Byte offsets · v2.1.118 ref build
+## 🧭 Byte offsets · v2.1.119 ref build
 
 Reference binary: `@anthropic-ai/claude-code-linux-x64/claude`
-SHA-256 prefix: `12bd4b0916de` · size: **236 411 520 B** · format: ELF 64-bit LSB, `.bun` section
+SHA-256 prefix: `cca43053f062` · size: **245 230 208 B** · format: ELF 64-bit LSB, `.bun` section (active bundle **+ VFS copy** — see [2.1.119 layout change](#211119-layout-change) below)
+
+> Offsets below are from the **2.1.118 ref build** and are preserved as a historical anchor — regex anchors remain correct; absolute offsets have shifted in 2.1.119 (use `vpcc scan` to get the live offsets for the current binary).
 
 <div align="center">
 
@@ -382,7 +402,7 @@ vpcc scan --export-patch js-s5K-refusal-neutralize-v2.1.114
 
 ---
 
-## 📋 Patch catalog (77 total)
+## 📋 Patch catalog (96 total)
 
 <details>
 <summary><b>🛑 AUP &amp; refusal · 9</b></summary>
@@ -502,12 +522,12 @@ graph TD
 
 ```
 vpcc/
-├── __init__.py    — version 2.1.118
+├── __init__.py    — version 2.1.119
 ├── __main__.py    — 14 sub-commands
 ├── updater.py     — GitHub API sync + autoheal state machine
 └── scanner.py     — SigScanner + auto-heal regen
 
-patches/           — 77 signed JSON patches
+patches/           — 96 signed JSON patches
 contrib/
 ├── preload/claude-preload.js   — runtime monkey-patch layer
 └── systemd/                    — autoheal timer unit
@@ -552,7 +572,7 @@ State at `~/.vpcc/state.json` (synthetic example):
   "last_cc_sha":    "12bd4b0916de",
   "last_cc_kind":   "bun_sea",
   "patches_commit": "a1b2c3d4e5f6",
-  "patches_count":  77,
+  "patches_count":  96,
   "updated_at":     "2026-04-24T10:00:00+00:00"
 }
 ```
@@ -668,8 +688,8 @@ Licensed **GPL-3.0-or-later**.
 
 ```
  $ vpcc doctor
-   vpcc ver   : 2.1.118
-   patches    : 77
+   vpcc ver   : 2.1.119
+   patches    : 96
    sig drift  : 0 (all anchors locatable)
    applied    : all
    upstream   : current
@@ -677,6 +697,6 @@ Licensed **GPL-3.0-or-later**.
 
 <br>
 
-<strong>⚡ 77 patches · 3 defense layers · auto-heals through every CC update ⚡</strong>
+<strong>⚡ 96 patches · 3 defense layers · auto-heals through every CC update ⚡</strong>
 
 </div>

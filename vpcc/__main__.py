@@ -308,6 +308,49 @@ def _find_bun_section(data) -> tuple[int, int]:
     raise RuntimeError(f"unknown binary format magic={head.hex()}")
 
 
+def _find_active_bundle_bounds(data, bun_lo: int, bun_hi: int) -> tuple[int, int]:
+    """
+    Bun SEA ≥ 2.1.119 embeds the main entry bundle PLUS a virtual-filesystem
+    (VFS) copy of the same source at a second location.  The layout is:
+
+        [header][active-entry-blob (JS source, ~13 MB)][bytecode-for-deps (~102 MB)]
+        [lookup-key\x00][vfs-path\x00][vfs-copy-of-cli.js][other-vfs-files][trailer]
+
+    Patching any byte in the VFS copy corrupts the module Bun re-parses at
+    startup, causing the "entry.instantiate" crash even though the active
+    bundle itself is fine.
+
+    Detection: the active bundle always starts with "// @bun @bytecode" and its
+    byte-length is encoded as a little-endian u32 at (data_start - 4).
+    We read that field and return [abs_start, abs_end) so callers only scan the
+    active bundle region.
+
+    Falls back to the full [bun_lo, bun_hi) range if the marker or size look
+    implausible (e.g., old single-bundle builds).
+    """
+    BUN_BYTECODE_MARKER = b"// @bun @bytecode"
+    section_start = bun_lo
+    # Search for the marker within the section
+    abs_marker = data.find(BUN_BYTECODE_MARKER, section_start, bun_hi)
+    if abs_marker < 0:
+        return bun_lo, bun_hi  # fallback: no marker found
+
+    data_start = abs_marker  # absolute offset in `data`
+    size_field_off = data_start - 4
+    if size_field_off < section_start:
+        return bun_lo, bun_hi  # no room for size field
+
+    import struct as _s
+    blob_size = _s.unpack_from("<I", data, size_field_off)[0]
+    active_end = data_start + blob_size
+
+    # Sanity: blob_size must be positive and fit inside the section
+    if blob_size < 1024 or active_end > bun_hi:
+        return bun_lo, bun_hi  # implausible — fall back
+
+    return data_start, active_end
+
+
 def patch_bun_sea_inplace(binary: Path, patches: list) -> dict:
     """
     In-place Bun SEA byte patcher. No objcopy, preserves ELF layout.
@@ -316,6 +359,10 @@ def patch_bun_sea_inplace(binary: Path, patches: list) -> dict:
     Research ref: docs/BUN_BYTECODE_FORMAT.md in void-patcher repo.
     Key insight: .bun section has no integrity check; JSC SourceCodeKey is
     fail-open (mismatch -> bytecode discarded, source re-parsed, app runs).
+
+    2.1.119 change: the .bun section now contains a second VFS copy of the
+    main cli.js source.  Patching that copy corrupts Bun's module-loader.
+    _find_active_bundle_bounds() restricts writes to the active-entry blob only.
     """
     mode = binary.stat().st_mode & 0o7777
     original_size = binary.stat().st_size
@@ -326,6 +373,10 @@ def patch_bun_sea_inplace(binary: Path, patches: list) -> dict:
 
     if bytes(data[bun_hi - len(_BUN_TRAILER):bun_hi]) != _BUN_TRAILER:
         return {"ok": False, "err": "Bun trailer invalid — format change", "applied": 0, "skipped": 0}
+
+    # Narrow the writable region to the active entry bundle only, so we never
+    # accidentally corrupt the VFS copy or the bundled-module bytecode blobs.
+    eff_lo, eff_hi = _find_active_bundle_bounds(data, bun_lo, bun_hi)
 
     applied_total = 0
     skipped_total = 0
@@ -340,7 +391,7 @@ def patch_bun_sea_inplace(binary: Path, patches: list) -> dict:
             replace = sub.get("replace", "")
             marker = sub.get("applied_marker")
 
-            if marker and data.find(marker.encode("utf-8", "surrogateescape"), bun_lo, bun_hi) >= 0:
+            if marker and data.find(marker.encode("utf-8", "surrogateescape"), eff_lo, eff_hi) >= 0:
                 continue
 
             if search_regex:
@@ -349,7 +400,7 @@ def patch_bun_sea_inplace(binary: Path, patches: list) -> dict:
                 except re.error:
                     skipped_n += 1
                     continue
-                section_view = bytes(data[bun_lo:bun_hi])
+                section_view = bytes(data[eff_lo:eff_hi])
                 for m in pat.finditer(section_view):
                     mb = m.group(0)
                     try:
@@ -362,7 +413,7 @@ def patch_bun_sea_inplace(binary: Path, patches: list) -> dict:
                         continue
                     if len(rb) < len(mb):
                         rb = rb + b" " * (len(mb) - len(rb))
-                    abs_start = bun_lo + m.start()
+                    abs_start = eff_lo + m.start()
                     data[abs_start:abs_start + len(mb)] = rb
                     applied_n += 1
             elif search:
@@ -373,9 +424,9 @@ def patch_bun_sea_inplace(binary: Path, patches: list) -> dict:
                     continue
                 if len(r_b) < len(s_b):
                     r_b = r_b + b" " * (len(s_b) - len(r_b))
-                pos = bun_lo
+                pos = eff_lo
                 while True:
-                    j = data.find(s_b, pos, bun_hi)
+                    j = data.find(s_b, pos, eff_hi)
                     if j < 0:
                         break
                     data[j:j + len(s_b)] = r_b
@@ -470,7 +521,10 @@ def load_patches() -> list[dict[str, Any]]:
     patches = []
     for f in sorted(PATCH_DIR.glob("*.json")):
         try:
-            patches.append(json.loads(f.read_text(encoding="utf-8")))
+            p = json.loads(f.read_text(encoding="utf-8"))
+            if p.get("disabled"):
+                continue
+            patches.append(p)
         except json.JSONDecodeError as e:
             print(f"{R}{CROSS} {f.name}: invalid JSON — {e}{X}", file=sys.stderr)
     return patches
@@ -555,11 +609,12 @@ def cmd_patch(args) -> int:
             try:
                 data = bytearray(target.read_bytes())
                 bun_off, bun_size = _find_bun_section(data)
+                eff_lo, eff_hi = _find_active_bundle_bounds(data, bun_off, bun_off + bun_size)
                 for p in js_patches:
                     applied_n = 0
                     for sub in p.get("patches", []):
                         marker = sub.get("applied_marker")
-                        if marker and data.find(marker.encode("utf-8","surrogateescape"), bun_off, bun_off+bun_size) >= 0:
+                        if marker and data.find(marker.encode("utf-8","surrogateescape"), eff_lo, eff_hi) >= 0:
                             continue
                         sr = sub.get("search_regex") or sub.get("search") or ""
                         if not sr:
@@ -567,9 +622,9 @@ def cmd_patch(args) -> int:
                         try:
                             if sub.get("search_regex"):
                                 pat = re.compile(sr.encode("utf-8","surrogateescape"), re.DOTALL)
-                                applied_n += sum(1 for _ in pat.finditer(bytes(data[bun_off:bun_off+bun_size])))
+                                applied_n += sum(1 for _ in pat.finditer(bytes(data[eff_lo:eff_hi])))
                             else:
-                                applied_n += bytes(data[bun_off:bun_off+bun_size]).count(sr.encode("utf-8","surrogateescape"))
+                                applied_n += bytes(data[eff_lo:eff_hi]).count(sr.encode("utf-8","surrogateescape"))
                         except re.error:
                             pass
                     msg = "no-op (already applied)" if applied_n == 0 else f"would apply {applied_n} in-place"

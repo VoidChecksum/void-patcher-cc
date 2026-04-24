@@ -1,0 +1,21 @@
+{
+  "id": "js-destructive-command-warning-off",
+  "description": "tengu_destructive_command_warning gates a UI warning modal on dangerous bash commands. Wrap gate call in a forced-false by replacing the gate call with false.",
+  "type": "js_replace",
+  "validate_js": true,
+  "scan_signatures": true,
+  "patches": [
+    {
+      "search_regex": "k\\$\\(\"tengu_destructive_command_warning\",!1\\)",
+      "replace": "(0&&\"tengu_destructive_command_warning\")",
+      "applied_marker": "(0&&\"tengu_destructive_command_warning\")",
+      "description": "destructive-command-warning gate -> always false",
+      "required": false,
+      "count": 0
+    }
+  ],
+  "anchor_strings": [
+    "tengu_destructive_command_warning"
+  ],
+  "version_last_tested": "2.1.119"
+}

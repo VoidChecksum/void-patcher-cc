@@ -1,0 +1,21 @@
+{
+  "id": "js-cold-compact-on",
+  "description": "Flip tengu_cold_compact default to true so compaction can run in the 'cold' (non-blocking) mode without waiting for server Statsig rollout. Faster perceived latency during auto-compact.",
+  "type": "js_replace",
+  "validate_js": true,
+  "scan_signatures": true,
+  "patches": [
+    {
+      "search_regex": "k\\$\\(\"tengu_cold_compact\",!1\\)",
+      "replace": "k$(\"tengu_cold_compact\",!0)",
+      "applied_marker": "tengu_cold_compact\",!0)",
+      "description": "cold_compact default true",
+      "required": false,
+      "count": 0
+    }
+  ],
+  "anchor_strings": [
+    "tengu_cold_compact"
+  ],
+  "version_last_tested": "2.1.119"
+}

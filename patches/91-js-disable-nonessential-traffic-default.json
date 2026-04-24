@@ -1,0 +1,21 @@
+{
+  "id": "js-disable-nonessential-traffic-default",
+  "description": "ha6() determines the telemetry-network policy. Currently it only returns 'essential-traffic'/'no-telemetry' if env vars are set. Hard-code the default to 'no-telemetry' so telemetry/analytics traffic is blocked by default without needing env vars.",
+  "type": "js_replace",
+  "validate_js": true,
+  "scan_signatures": true,
+  "patches": [
+    {
+      "search_regex": "function ([A-Za-z_$][\\w$]*)\\(\\)\\{if\\(process\\.env\\.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC\\)return\"essential-traffic\";if\\(process\\.env\\.DISABLE_TELEMETRY\\)return\"no-telemetry\";if\\(SH\\(process\\.env\\.DO_NOT_TRACK\\)\\)return\"no-telemetry\";return\"default\"\\}",
+      "replace": "function \\1(){return\"no-telemetry\"/*vntrf*/;if(0)return\"essential-traffic\";if(0)return\"no-telemetry\";if(0)return\"no-telemetry\";return\"default\"}",
+      "applied_marker": "/*vntrf*/",
+      "description": "ha6() -> no-telemetry by default",
+      "required": false,
+      "count": 0
+    }
+  ],
+  "anchor_strings": [
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC"
+  ],
+  "version_last_tested": "2.1.119"
+}

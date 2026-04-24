@@ -1,0 +1,16 @@
+{
+  "id": "js-econnrefused-silent",
+  "description": "Silence ECONNREFUSED/ENOTFOUND throws in plugin marketplace download so they fall through to soft-fail paths instead of aborting the command with 'Error: ECONNREFUSED'",
+  "type": "js_replace",
+  "validate_js": true,
+  "patches": [
+    {
+      "search_regex": "if\\(D\\.code===\"ECONNREFUSED\"\\|\\|D\\.code===\"ENOTFOUND\"\\)throw Error",
+      "replace": "if(!1&&D.code===\"ECONNREFUSED\")throw Error",
+      "applied_marker": "if(!1&&D.code===\"ECONNREFUSED\")throw Error",
+      "description": "Plugin marketplace: skip ECONNREFUSED/ENOTFOUND throw",
+      "required": false,
+      "count": 0
+    }
+  ]
+}

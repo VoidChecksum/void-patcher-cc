@@ -1,0 +1,21 @@
+{
+  "id": "js-fgts-default-on",
+  "description": "Flip tengu_fgts (fine-grained tool streaming) default to true — enables eager_input_streaming on supported tools for faster responses. Normally gated by Statsig or CLAUDE_CODE_ENABLE_FINE_GRAINED_TOOL_STREAMING env.",
+  "type": "js_replace",
+  "validate_js": true,
+  "scan_signatures": true,
+  "patches": [
+    {
+      "search_regex": "k\\$\\(\"tengu_fgts\",!1\\)",
+      "replace": "k$(\"tengu_fgts\",!0)",
+      "applied_marker": "tengu_fgts\",!0)",
+      "description": "fgts default true",
+      "required": false,
+      "count": 0
+    }
+  ],
+  "anchor_strings": [
+    "tengu_fgts"
+  ],
+  "version_last_tested": "2.1.119"
+}

@@ -1,29 +1,62 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 240" width="1000" height="240" role="img" aria-label="vpcc — Void Patcher for Claude Code">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 280" width="1100" height="280" role="img" aria-label="vpcc — Void Patcher for Claude Code">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%"   stop-color="#0D1117"/>
-      <stop offset="50%"  stop-color="#161B22"/>
-      <stop offset="100%" stop-color="#0D1117"/>
-    </linearGradient>
+    <!-- deep-space background with subtle radial glow -->
+    <radialGradient id="bg" cx="50%" cy="45%" r="75%">
+      <stop offset="0%"   stop-color="#111822"/>
+      <stop offset="55%"  stop-color="#0D1117"/>
+      <stop offset="100%" stop-color="#05070A"/>
+    </radialGradient>
+    <!-- primary accent gradient -->
     <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0%"   stop-color="#00D4FF"/>
       <stop offset="50%"  stop-color="#9C27B0"/>
       <stop offset="100%" stop-color="#FF6B9D"/>
     </linearGradient>
+    <!-- secondary accent (for badges) -->
+    <linearGradient id="accent2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"   stop-color="#FF6B9D"/>
+      <stop offset="100%" stop-color="#E9D900"/>
+    </linearGradient>
+    <!-- glow filter -->
     <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="2" result="b"/>
+      <feGaussianBlur stdDeviation="2.5" result="b"/>
       <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
-    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#00D4FF" stroke-opacity="0.08" stroke-width="1"/>
+    <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <!-- grid pattern -->
+    <pattern id="grid" width="44" height="44" patternUnits="userSpaceOnUse">
+      <path d="M 44 0 L 0 0 0 44" fill="none" stroke="#00D4FF" stroke-opacity="0.07" stroke-width="1"/>
+    </pattern>
+    <!-- scanline overlay -->
+    <pattern id="scanlines" width="4" height="4" patternUnits="userSpaceOnUse">
+      <rect width="4" height="1" fill="#00D4FF" fill-opacity="0.025"/>
     </pattern>
   </defs>
 
-  <rect width="1000" height="240" fill="url(#bg)"/>
-  <rect width="1000" height="240" fill="url(#grid)"/>
-  <rect x="0" y="0"   width="1000" height="3" fill="url(#accent)"/>
-  <rect x="0" y="237" width="1000" height="3" fill="url(#accent)"/>
+  <!-- backdrop -->
+  <rect width="1100" height="280" fill="url(#bg)"/>
+  <rect width="1100" height="280" fill="url(#grid)"/>
+  <rect width="1100" height="280" fill="url(#scanlines)"/>
 
+  <!-- top / bottom accent bars -->
+  <rect x="0" y="0"   width="1100" height="3" fill="url(#accent)"/>
+  <rect x="0" y="277" width="1100" height="3" fill="url(#accent)"/>
+
+  <!-- corner brackets (dev-console motif) -->
+  <g stroke="#00D4FF" stroke-opacity="0.45" stroke-width="1.5" fill="none">
+    <path d="M 16 16 L 16 40 M 16 16 L 40 16"/>
+    <path d="M 1084 16 L 1084 40 M 1084 16 L 1060 16"/>
+    <path d="M 16 264 L 16 240 M 16 264 L 40 264"/>
+    <path d="M 1084 264 L 1084 240 M 1084 264 L 1060 264"/>
+  </g>
+
+  <!-- decorative soft halo behind logo -->
+  <circle cx="230" cy="115" r="100" fill="#00D4FF" fill-opacity="0.06" filter="url(#softGlow)"/>
+
+  <!-- ASCII logo -->
   <g transform="translate(60,55)" fill="#00D4FF" filter="url(#glow)" font-family="JetBrains Mono, Consolas, Menlo, monospace" font-weight="700">
     <text x="0" y="0"   font-size="22">██╗   ██╗██████╗  ██████╗ ██████╗</text>
     <text x="0" y="25"  font-size="22">██║   ██║██╔══██╗██╔════╝██╔════╝</text>
@@ -33,35 +66,47 @@
     <text x="0" y="125" font-size="22">  ╚═══╝  ╚═╝      ╚═════╝ ╚═════╝</text>
   </g>
 
-  <g transform="translate(520,88)" font-family="JetBrains Mono, Consolas, Menlo, monospace">
-    <text x="0" y="0" fill="#FFFFFF" font-size="38" font-weight="700">
+  <!-- vertical separator -->
+  <line x1="495" y1="50" x2="495" y2="200" stroke="url(#accent)" stroke-width="1" stroke-opacity="0.4"/>
+
+  <!-- tagline block -->
+  <g transform="translate(520,85)" font-family="JetBrains Mono, Consolas, Menlo, monospace">
+    <text x="0" y="0" fill="#FFFFFF" font-size="38" font-weight="700" filter="url(#glow)">
       Void Patcher<tspan fill="#FF6B9D">.</tspan>cc
     </text>
-    <text x="0" y="32" fill="#8B949E" font-size="16">
-      77 reverse-engineered patches · 3-layer defense
+    <text x="0" y="32" fill="#C9D1D9" font-size="15">
+      96 regex-signature patches · 3-layer defense
     </text>
-    <text x="0" y="58" fill="#8B949E" font-size="16">
-      cli.js · Bun SEA ELF · runtime preload · auto-heal
+    <text x="0" y="55" fill="#8B949E" font-size="14">
+      cli.js · Bun SEA ELF · active-bundle · runtime preload · auto-heal
     </text>
 
-    <g transform="translate(0,82)">
-      <rect width="130" height="26" rx="13" fill="#0D1117" stroke="#00D4FF" stroke-width="1.5"/>
-      <text x="65" y="17" fill="#00D4FF" font-size="13" font-weight="700" text-anchor="middle">v2.1.114</text>
-    </g>
-    <g transform="translate(140,82)">
-      <rect width="120" height="26" rx="13" fill="#0D1117" stroke="#FF6B9D" stroke-width="1.5"/>
-      <text x="60" y="17" fill="#FF6B9D" font-size="13" font-weight="700" text-anchor="middle">77 patches</text>
-    </g>
-    <g transform="translate(270,82)">
-      <rect width="120" height="26" rx="13" fill="#0D1117" stroke="#E9D900" stroke-width="1.5"/>
-      <text x="60" y="17" fill="#E9D900" font-size="13" font-weight="700" text-anchor="middle">auto-heal</text>
+    <!-- badges row -->
+    <g transform="translate(0,80)">
+      <g>
+        <rect width="140" height="28" rx="14" fill="#0D1117" stroke="#00D4FF" stroke-width="1.5"/>
+        <text x="70" y="18" fill="#00D4FF" font-size="13" font-weight="700" text-anchor="middle">v2.1.119</text>
+      </g>
+      <g transform="translate(150,0)">
+        <rect width="130" height="28" rx="14" fill="#0D1117" stroke="#FF6B9D" stroke-width="1.5"/>
+        <text x="65" y="18" fill="#FF6B9D" font-size="13" font-weight="700" text-anchor="middle">96 patches</text>
+      </g>
+      <g transform="translate(290,0)">
+        <rect width="120" height="28" rx="14" fill="#0D1117" stroke="#E9D900" stroke-width="1.5"/>
+        <text x="60" y="18" fill="#E9D900" font-size="13" font-weight="700" text-anchor="middle">auto-heal</text>
+      </g>
+      <g transform="translate(420,0)">
+        <rect width="140" height="28" rx="14" fill="#0D1117" stroke="#9C27B0" stroke-width="1.5"/>
+        <text x="70" y="18" fill="#B866E0" font-size="13" font-weight="700" text-anchor="middle">VFS-aware</text>
+      </g>
     </g>
   </g>
 
-  <text x="60" y="220" fill="#484F58" font-family="JetBrains Mono, monospace" font-size="11">
-    regex-signature patches · anchor-locatable · atomic rollback · GPL-3.0
+  <!-- bottom status line -->
+  <text x="60" y="258" fill="#484F58" font-family="JetBrains Mono, monospace" font-size="11">
+    anchor-locatable · atomic rollback · signature auto-heal · GPL-3.0
   </text>
-  <text x="940" y="220" fill="#484F58" font-family="JetBrains Mono, monospace" font-size="11" text-anchor="end">
+  <text x="1040" y="258" fill="#484F58" font-family="JetBrains Mono, monospace" font-size="11" text-anchor="end">
     github.com/VoidChecksum/void-patcher-cc
   </text>
 </svg>

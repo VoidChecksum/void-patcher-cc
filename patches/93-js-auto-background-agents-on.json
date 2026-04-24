@@ -1,0 +1,21 @@
+{
+  "id": "js-auto-background-agents-on",
+  "description": "Flip kX1() auto-background-agents timeout default to 120000ms (enabled) without requiring env var or Statsig. Lets Claude spawn background tasks without explicit CLAUDE_AUTO_BACKGROUND_TASKS env.",
+  "type": "js_replace",
+  "validate_js": true,
+  "scan_signatures": true,
+  "patches": [
+    {
+      "search_regex": "k\\$\\(\"tengu_auto_background_agents\",!1\\)",
+      "replace": "k$(\"tengu_auto_background_agents\",!0)",
+      "applied_marker": "tengu_auto_background_agents\",!0)",
+      "description": "auto_background_agents default true",
+      "required": false,
+      "count": 0
+    }
+  ],
+  "anchor_strings": [
+    "tengu_auto_background_agents"
+  ],
+  "version_last_tested": "2.1.119"
+}

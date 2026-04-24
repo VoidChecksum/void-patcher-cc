@@ -1,0 +1,21 @@
+{
+  "id": "js-session-memory-on",
+  "description": "Flip tengu_session_memory default to true so session-memory extraction runs without needing server Statsig rollout. Useful for long-context refactoring workflows.",
+  "type": "js_replace",
+  "validate_js": true,
+  "scan_signatures": true,
+  "patches": [
+    {
+      "search_regex": "k\\$\\(\"tengu_session_memory\",!1\\)",
+      "replace": "k$(\"tengu_session_memory\",!0)",
+      "applied_marker": "tengu_session_memory\",!0)",
+      "description": "session_memory default true",
+      "required": false,
+      "count": 0
+    }
+  ],
+  "anchor_strings": [
+    "tengu_session_memory"
+  ],
+  "version_last_tested": "2.1.119"
+}

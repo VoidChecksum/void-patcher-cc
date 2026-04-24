@@ -1,0 +1,21 @@
+{
+  "id": "js-always-enable-effort-on",
+  "description": "Flip CLAUDE_CODE_ALWAYS_ENABLE_EFFORT gate to always true — unlocks 'high effort' extended-thinking path for every model. Overwrites the env-check branch.",
+  "type": "js_replace",
+  "validate_js": true,
+  "scan_signatures": true,
+  "patches": [
+    {
+      "search_regex": "if\\(SH\\(process\\.env\\.CLAUDE_CODE_ALWAYS_ENABLE_EFFORT\\)\\)return!0;",
+      "replace": "return!0;/*vefrton*/                                        ",
+      "applied_marker": "/*vefrton*/",
+      "description": "Xy() effort env-check -> return!0",
+      "required": false,
+      "count": 0
+    }
+  ],
+  "anchor_strings": [
+    "CLAUDE_CODE_ALWAYS_ENABLE_EFFORT"
+  ],
+  "version_last_tested": "2.1.119"
+}

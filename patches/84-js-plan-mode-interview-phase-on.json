@@ -1,0 +1,21 @@
+{
+  "id": "js-plan-mode-interview-phase-on",
+  "description": "Flip the plan-mode interview-phase gate default from false to true so plan mode runs the richer interview-phase workflow without requiring server-side Statsig rollout or the CLAUDE_CODE_PLAN_MODE_INTERVIEW_PHASE env var.",
+  "type": "js_replace",
+  "validate_js": true,
+  "scan_signatures": true,
+  "patches": [
+    {
+      "search_regex": "return k\\$\\(\"tengu_plan_mode_interview_phase\",!1\\)\\}",
+      "replace": "return k$(\"tengu_plan_mode_interview_phase\",!0)}",
+      "applied_marker": "tengu_plan_mode_interview_phase\",!0)",
+      "description": "interview-phase default true",
+      "required": false,
+      "count": 0
+    }
+  ],
+  "anchor_strings": [
+    "tengu_plan_mode_interview_phase"
+  ],
+  "version_last_tested": "2.1.119"
+}

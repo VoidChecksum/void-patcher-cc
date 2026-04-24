@@ -1,0 +1,21 @@
+{
+  "id": "js-bypass-permissions-sync-kill-v2_1_119",
+  "description": "v2.1.119: sync startup bypass-permissions check (vz$ in 2.1.119) that short-circuits bypass mode if Statsig n88() flips. Neutralize with early return so the 'disabled by feature gate' path cannot fire at session start.",
+  "type": "js_replace",
+  "validate_js": true,
+  "scan_signatures": true,
+  "patches": [
+    {
+      "search_regex": "async function ([A-Za-z_$][\\w$]*)\\(H,\\$\\)\\{if\\(n36\\)return;if\\(n36=!0,!H\\.isBypassPermissionsModeAvailable\\)return;if\\(!await n88\\(\\)\\)return;\\$\\(\\(K\\)=>_WH\\(K\\)\\)\\}",
+      "replace": "async function \\1(H,$){return/*bp119s*/;if(0);if(0)if(0);if(0)$((K)=>_WH(K))                    }",
+      "applied_marker": "return/*bp119s*/",
+      "description": "sync bypass-permissions-kill no-op",
+      "required": false,
+      "count": 0
+    }
+  ],
+  "anchor_strings": [
+    "if(n36=!0,!H.isBypassPermissionsModeAvailable)"
+  ],
+  "version_last_tested": "2.1.119"
+}
