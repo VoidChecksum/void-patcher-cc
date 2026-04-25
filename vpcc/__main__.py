@@ -130,6 +130,13 @@ def find_target() -> tuple[Path | None, str]:
             if p.exists() and (kind == "js" or p.stat().st_size > 1_000_000):
                 return p, kind
 
+    # Native CLI installer (~/.local/share/claude/versions/<ver>)
+    _versions_dir = Path.home() / ".local/share/claude/versions"
+    if _versions_dir.is_dir():
+        for child in sorted(_versions_dir.iterdir(), key=lambda p: p.name, reverse=True):
+            if child.is_file() and child.stat().st_size > 1_000_000:
+                return child, "bun_sea"
+
     # Native installer (https://claude.ai/install.sh) lands the binary in
     # ~/.local/share/claude/versions/<semver> (symlinked from ~/.local/bin/claude)
     # as well as older ~/.claude/ and ~/.local/share/claude-code/ layouts.
@@ -718,13 +725,20 @@ def cmd_patch(args) -> int:
         t = p.get("type")
         if t in ("settings", "hook"):
             success, msg = _apply_settings(p, dry_run=args.dry_run)
-            mark = f"{G}ok{X}" if success else f"{R}fail{X}"
-            print(f"  {mark}   {p['id']:40s}  {msg}")
-            ok += success; fail += not success
+        elif t == "mcp_guard":
+            success, msg = _apply_mcp_guard(p, dry_run=args.dry_run)
+        elif t == "wrapper":
+            success, msg = _apply_wrapper(p, kind or "bun_sea", target, dry_run=args.dry_run)
+        elif t == "binary_install":
+            success, msg = _apply_binary_install(p, kind or "bun_sea", dry_run=args.dry_run)
         else:
-            # mcp_guard / wrapper / binary_install — skip in standalone vpcc
-            print(f"  {Y}skip{X} {p['id']:40s}  type={t} (use void-patcher for full support)")
+            print(f"  {Y}skip{X} {p['id']:40s}  type={t} (unknown)")
             skip += 1
+            continue
+        mark = f"{G}ok{X}" if success else f"{R}fail{X}"
+        print(f"  {mark}   {p['id']:40s}  {msg}")
+        ok += success
+        fail += not success
 
     print(f"\n{B}{ok} ok {DOT} {fail} failed {DOT} {skip} skipped{X}")
 
@@ -761,6 +775,114 @@ def _apply_settings(patch: dict, dry_run: bool = False) -> tuple[bool, str]:
         return True, f"would set {changed} key(s)"
     path.write_text(json.dumps(out, indent=2), encoding="utf-8")
     return True, f"{changed} key(s)"
+
+
+def _apply_mcp_guard(p: dict, dry_run: bool = False) -> tuple[bool, str]:
+    """mcp-guard: add MCP spawn timeout to preload + activate via BUN_OPTIONS wrapper."""
+    preload_dir = Path.home() / ".local/share/void-patcher"
+    preload_src = ROOT / "contrib" / "preload" / "claude-preload.js"
+    preload_dst = preload_dir / "claude-preload.js"
+    GUARD_MARKER = "// mcp-guard"
+    GUARD_CODE = (
+        "\n  // mcp-guard: timeout npx @latest MCP server spawns\n"
+        '  try { const _cp = require("child_process"); const _oS = _cp.spawn;\n'
+        "    _cp.spawn = function(cmd, args, opts) { const p = _oS.apply(this, arguments);\n"
+        '      const isNpx = typeof cmd === "string" && cmd.includes("npx") &&\n'
+        '        Array.isArray(args) && args.some(a => typeof a === "string" && a.includes("@latest"));\n'
+        '      if (isNpx) { const t = setTimeout(() => { try { p.kill("SIGKILL"); } catch(_) {} }, 30000);\n'
+        '        p.on("close", () => clearTimeout(t)); } return p; }; } catch(_) {}\n'
+    )
+
+    # Install preload if missing
+    if not preload_dst.exists():
+        if not preload_src.exists():
+            return False, "preload source missing — run vpcc install-preload first"
+        if not dry_run:
+            preload_dir.mkdir(parents=True, exist_ok=True)
+            preload_dst.write_bytes(preload_src.read_bytes())
+
+    # Add guard code to preload
+    if preload_dst.exists():
+        content = preload_dst.read_text(encoding="utf-8")
+        already_guarded = GUARD_MARKER in content
+    else:
+        content = ""
+        already_guarded = False
+
+    if not already_guarded:
+        inject_at = "globalThis.__VPCC_PRELOAD_ACTIVE__ = true;"
+        if inject_at in content:
+            if not dry_run:
+                preload_dst.write_text(
+                    content.replace(inject_at, inject_at + GUARD_CODE), encoding="utf-8"
+                )
+        else:
+            return False, "preload format unexpected"
+
+    if dry_run:
+        return True, "would add mcp-guard to preload" if not already_guarded else "no-op (already applied)"
+
+    return True, "no-op (already applied)" if already_guarded else "mcp-guard added to preload"
+
+
+def _apply_wrapper(p: dict, kind: str, target: "Path | None", dry_run: bool = False) -> tuple[bool, str]:
+    """Install wrapper — native binary or cli.js depending on install kind."""
+    wrapper_path = Path(p.get("wrapper_path", "~/.local/bin/claude")).expanduser()
+    NATIVE_MARKER = "# vpcc-native-wrapper"
+    JS_MARKER = "CLAUDE_CLI_JS"
+
+    if kind == "bun_sea":
+        WRAPPER_CONTENT = (
+            "#!/usr/bin/env bash\n"
+            f"{NATIVE_MARKER}\n"
+            'VPCC_PRELOAD="$HOME/.local/share/void-patcher/claude-preload.js"\n'
+            'VPCC_VERSIONS_DIR="$HOME/.local/share/claude/versions"\n'
+            'VPCC_NATIVE="$(ls -1 "$VPCC_VERSIONS_DIR" 2>/dev/null | sort -V | tail -1)"\n'
+            'VPCC_NATIVE="$VPCC_VERSIONS_DIR/$VPCC_NATIVE"\n'
+            'if [[ ! -x "${VPCC_NATIVE:-}" ]]; then echo "vpcc wrapper: native binary not found" >&2; exit 1; fi\n'
+            'if [[ -f "$VPCC_PRELOAD" ]]; then\n'
+            '    export BUN_OPTIONS="${BUN_OPTIONS:+$BUN_OPTIONS }--preload $VPCC_PRELOAD"\n'
+            'fi\n'
+            'exec "$VPCC_NATIVE" "$@"\n'
+        )
+        if wrapper_path.exists() and not wrapper_path.is_symlink():
+            try:
+                if NATIVE_MARKER in wrapper_path.read_text():
+                    return True, "no-op (already applied)"
+            except Exception:
+                pass
+
+        if dry_run:
+            return True, "would install native BUN_OPTIONS wrapper"
+
+        wrapper_path.unlink(missing_ok=True)
+        wrapper_path.write_text(WRAPPER_CONTENT)
+        wrapper_path.chmod(0o755)
+        return True, "native BUN_OPTIONS wrapper installed"
+    else:
+        content = p.get("content", "")
+        if not content:
+            return False, "no wrapper content in patch"
+        if wrapper_path.exists():
+            try:
+                existing = wrapper_path.read_text()
+                if JS_MARKER in existing or NATIVE_MARKER in existing:
+                    return True, "no-op (already applied)"
+            except Exception:
+                pass
+        if dry_run:
+            return True, "would install cli.js wrapper"
+        wrapper_path.unlink(missing_ok=True)
+        wrapper_path.write_text(content)
+        wrapper_path.chmod(0o755)
+        return True, "cli.js wrapper installed"
+
+
+def _apply_binary_install(p: dict, kind: str, dry_run: bool = False) -> tuple[bool, str]:
+    """binary_install: for npm layout, replace file in package. Native binary: N/A."""
+    if kind == "bun_sea":
+        return True, "no-op (N/A for native binary — seccomp is in Bun runtime, not VFS)"
+    return False, "npm layout binary_install not implemented in vpcc"
 
 
 def cmd_verify(args) -> int:
