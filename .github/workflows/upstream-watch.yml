@@ -79,7 +79,7 @@ jobs:
 
       - name: Open or update breakage issue
         if: env.SKIP != '1' && steps.check.outputs.broken != '0'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           CC_VERSION: ${{ steps.ver.outputs.version }}
           BROKEN: ${{ steps.check.outputs.broken }}
