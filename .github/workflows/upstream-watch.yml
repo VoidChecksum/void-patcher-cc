@@ -26,13 +26,13 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22"
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -45,7 +45,7 @@ jobs:
 
       - name: Restore last-checked cache
         id: cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .github/cache
           key: upstream-version-${{ steps.ver.outputs.version }}
@@ -79,7 +79,7 @@ jobs:
 
       - name: Open or update breakage issue
         if: env.SKIP != '1' && steps.check.outputs.broken != '0'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           CC_VERSION: ${{ steps.ver.outputs.version }}
           BROKEN: ${{ steps.check.outputs.broken }}
