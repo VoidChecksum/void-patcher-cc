@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"echo \\\"=== auth status ===\\\"\\ntimeout 5 claude --bare -p \\\"say exactly the word pong\\\" 2>&1 | tail -5\\necho \\\"\\\"\\necho \\\"=== --dangerously-skip-permissions (tests js-root-restriction, js-d...",
-  "error": "Exit code 143\n=== auth status ===\nNot logged in · Please run /login\n\n=== --dangerously-skip-permissions (tests js-root-restriction, js-disable-bypass-check) ===\nTerminated                 timeout 15 claude --dangerously-skip-permissions -p \"say exactly the word pong\" 2>&1 | tail -5",
-  "timestamp": "2026-04-19T16:40:17.436Z",
-  "retry_count": 2
-}

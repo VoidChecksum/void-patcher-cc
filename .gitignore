@@ -1,3 +1,4 @@
+# Python build/cache output
 __pycache__/
 *.py[cod]
 *.egg-info/
@@ -6,8 +7,30 @@ build/
 .eggs/
 .pytest_cache/
 .coverage
+
+# Local/editor/agent state
 .vscode/
 .idea/
 *.swp
 .DS_Store
+Thumbs.db
+*.log
 .omc/
+.serena/
+
+# Secrets and credentials
+.env*
+!.env.example
+.npmrc
+.pypirc
+*.key
+*.pem
+*.p12
+*.crt
+*.cert
+credentials/
+cookies/
+secrets.*
+*.secret
+*.db
+*.sqlite
