@@ -321,7 +321,7 @@ def _find_bun_section_pe(data) -> tuple[int, int]:
             vsize   = _struct.unpack_from("<I", data, s + 8)[0]
             rsize   = _struct.unpack_from("<I", data, s + 16)[0]
             raw_off = _struct.unpack_from("<I", data, s + 20)[0]
-            return (raw_off, rsize or vsize)
+            return (raw_off, vsize or rsize)
     raise RuntimeError(".bun section not found (PE)")
 
 
