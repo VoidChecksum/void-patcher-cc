@@ -46,20 +46,50 @@ def parse_dry_run(out: str) -> list[dict]:
     return rows
 
 
+def load_patch_types(patch_dir: Path = Path("patches")) -> dict[str, str]:
+    """Map patch id to patch type so meta-patch failures are not called regex drift."""
+    out: dict[str, str] = {}
+    for f in patch_dir.glob("*.json"):
+        try:
+            obj = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        pid = obj.get("id")
+        if isinstance(pid, str):
+            out[pid] = str(obj.get("type") or "")
+    return out
+
+
+def classify_rows(rows: list[dict], patch_types: dict[str, str] | None = None) -> dict[str, list | int]:
+    """Classify dry-run failures into JS signature breakage vs meta-patch failures."""
+    patch_types = patch_types or {}
+    broken_signatures: list[dict] = []
+    meta_failures: list[dict] = []
+    for r in rows:
+        ptype = patch_types.get(r["id"], "")
+        is_js_patch = ptype in ("", "js_replace")
+        if r["status"] == "fail":
+            (broken_signatures if is_js_patch else meta_failures).append(r)
+        elif r["status"] == "ok" and is_js_patch and "would apply 0" in r["msg"]:
+            broken_signatures.append(r)
+    return {
+        "broken_signatures": broken_signatures,
+        "meta_failures": meta_failures,
+        "needs_issue": len(broken_signatures) + len(meta_failures),
+    }
+
+
 def main() -> int:
     rc_status, out_status = sh(["vpcc", "status"])
     rc_dry, out_dry       = sh(["vpcc", "patch", "--dry-run"])
     rows                  = parse_dry_run(out_dry)
 
-    failed = [r for r in rows if r["status"] == "fail"]
     ok     = [r for r in rows if r["status"] == "ok"]
-    noop   = [r for r in rows if r["status"] == "ok" and "no-op" in r["msg"]]
-    missing_regex = [r for r in rows if r["status"] == "ok"
-                     and "would apply 0" in r["msg"]]
-
-    # A patch counts as broken when its dry-run says it failed OR when it ran
-    # fine but matched zero locations (upstream changed the signature).
-    broken = failed + missing_regex
+    patch_types = load_patch_types()
+    classified = classify_rows(rows, patch_types)
+    broken = classified["broken_signatures"]
+    meta_failed = classified["meta_failures"]
+    clean_ok = [r for r in ok if r not in broken]
 
     rc_real, out_real = sh(["vpcc", "patch"])
     rc_verify, out_verify = sh(["vpcc", "verify"])
@@ -69,17 +99,26 @@ def main() -> int:
         f"",
         f"- **Claude Code version**: `{CC_VERSION}`",
         f"- **vpcc patches total**: {len(rows)}",
-        f"- **clean applies**: {len(ok) - len(broken)}",
+        f"- **clean applies**: {len(clean_ok)}",
         f"- **broken signatures**: {len(broken)}",
-        f"",
     ]
+    if meta_failed:
+        lines.append(f"- **meta patch failures**: {len(meta_failed)}")
+    lines.append("")
     if broken:
-        lines += ["## Broken patches", ""]
+        lines += ["## Broken signature patches", ""]
         for b in broken:
             lines.append(f"- `{b['id']}` — {b['msg']}")
-        lines += ["", "### Action", "",
+        lines += ["", "### Signature action", "",
                   "Update the regex/offsets in `patches/<id>.json` for the "
                   "affected patches and push a new release.", ""]
+    if meta_failed:
+        lines += ["## Meta patch failures", ""]
+        for b in meta_failed:
+            lines.append(f"- `{b['id']}` — {b['msg']}")
+        lines += ["", "### Meta action", "",
+                  "Investigate the patch implementation or install/runtime "
+                  "environment; this is not regex signature drift.", ""]
     lines += [
         "## `vpcc status`",
         "```", out_status.strip(), "```",
@@ -91,11 +130,14 @@ def main() -> int:
     ]
     REPORT.write_text("\n".join(lines))
 
+    needs_issue = classified["needs_issue"]
     if GHOUT:
         with open(GHOUT, "a") as f:
-            f.write(f"broken={len(broken)}\n")
+            f.write(f"broken={needs_issue}\n")
+            f.write(f"broken_signatures={len(broken)}\n")
+            f.write(f"meta_failed={len(meta_failed)}\n")
             f.write(f"total={len(rows)}\n")
-    print(f"broken={len(broken)} total={len(rows)}")
+    print(f"broken={needs_issue} signatures={len(broken)} meta={len(meta_failed)} total={len(rows)}")
     return 0
 
 

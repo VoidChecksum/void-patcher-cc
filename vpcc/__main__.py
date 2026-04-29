@@ -215,6 +215,12 @@ import struct as _struct
 _BUN_TRAILER = b"\n---- Bun! ----\n"
 
 
+def _bun_section_has_valid_trailer(data: bytes | bytearray, bun_lo: int, bun_hi: int) -> bool:
+    """Accept Bun section trailer with optional PE file-alignment NUL padding."""
+    section = bytes(data[bun_lo:bun_hi]).rstrip(b"\x00")
+    return section.endswith(_BUN_TRAILER)
+
+
 def _bun_section_is_bytecode(section_bytes: bytes) -> bool:
     """True when .bun section uses compiled Bun bytecode — must use in-place patching."""
     return b"// @bun @bytecode" in section_bytes[:1024]
@@ -321,7 +327,10 @@ def _find_bun_section_pe(data) -> tuple[int, int]:
             vsize   = _struct.unpack_from("<I", data, s + 8)[0]
             rsize   = _struct.unpack_from("<I", data, s + 16)[0]
             raw_off = _struct.unpack_from("<I", data, s + 20)[0]
-            return (raw_off, rsize or vsize)
+            # PE SizeOfRawData includes file-alignment padding. VirtualSize is
+            # the live .bun payload length; using raw size can land trailer
+            # validation inside trailing NUL padding on Windows builds.
+            return (raw_off, vsize or rsize)
     raise RuntimeError(".bun section not found (PE)")
 
 
@@ -403,7 +412,7 @@ def patch_bun_sea_inplace(binary: Path, patches: list) -> dict:
     bun_off, bun_size = _find_bun_section(data)
     bun_lo, bun_hi = bun_off, bun_off + bun_size
 
-    if bytes(data[bun_hi - len(_BUN_TRAILER):bun_hi]) != _BUN_TRAILER:
+    if not _bun_section_has_valid_trailer(data, bun_lo, bun_hi):
         return {"ok": False, "err": "Bun trailer invalid — format change", "applied": 0, "skipped": 0}
 
     # Narrow the writable region to the active entry bundle only, so we never
@@ -793,36 +802,44 @@ def _apply_mcp_guard(p: dict, dry_run: bool = False) -> tuple[bool, str]:
         '        p.on("close", () => clearTimeout(t)); } return p; }; } catch(_) {}\n'
     )
 
-    # Install preload if missing
-    if not preload_dst.exists():
-        if not preload_src.exists():
-            return False, "preload source missing — run vpcc install-preload first"
-        if not dry_run:
-            preload_dir.mkdir(parents=True, exist_ok=True)
-            preload_dst.write_bytes(preload_src.read_bytes())
-
-    # Add guard code to preload
-    if preload_dst.exists():
-        content = preload_dst.read_text(encoding="utf-8")
-        already_guarded = GUARD_MARKER in content
-    else:
-        content = ""
-        already_guarded = False
-
-    if not already_guarded:
+    def inject_guard(content: str) -> str | None:
         inject_at = "globalThis.__VPCC_PRELOAD_ACTIVE__ = true;"
         if inject_at in content:
-            if not dry_run:
-                preload_dst.write_text(
-                    content.replace(inject_at, inject_at + GUARD_CODE), encoding="utf-8"
-                )
-        else:
-            return False, "preload format unexpected"
+            return content.replace(inject_at, inject_at + GUARD_CODE, 1)
+        tail = "\n})();"
+        idx = content.rfind(tail)
+        if idx >= 0:
+            return content[:idx] + GUARD_CODE + content[idx:]
+        return None
+
+    preload_missing = not preload_dst.exists()
+    if preload_missing:
+        if not preload_src.exists():
+            return False, "preload source missing — run vpcc install-preload first"
+        content = preload_src.read_text(encoding="utf-8")
+        if not dry_run:
+            preload_dir.mkdir(parents=True, exist_ok=True)
+            preload_dst.write_text(content, encoding="utf-8")
+    else:
+        content = preload_dst.read_text(encoding="utf-8")
+
+    already_guarded = GUARD_MARKER in content
+    if already_guarded:
+        if dry_run and preload_missing:
+            return True, "would install preload (mcp-guard already present)"
+        return True, "no-op (already applied)"
+
+    new_content = inject_guard(content)
+    if new_content is None:
+        return False, "preload format unexpected"
 
     if dry_run:
-        return True, "would add mcp-guard to preload" if not already_guarded else "no-op (already applied)"
+        if preload_missing:
+            return True, "would install preload and add mcp-guard"
+        return True, "would add mcp-guard to preload"
 
-    return True, "no-op (already applied)" if already_guarded else "mcp-guard added to preload"
+    preload_dst.write_text(new_content, encoding="utf-8")
+    return True, "mcp-guard added to preload"
 
 
 def _apply_wrapper(p: dict, kind: str, target: "Path | None", dry_run: bool = False) -> tuple[bool, str]:
@@ -855,8 +872,9 @@ def _apply_wrapper(p: dict, kind: str, target: "Path | None", dry_run: bool = Fa
         if dry_run:
             return True, "would install native BUN_OPTIONS wrapper"
 
+        wrapper_path.parent.mkdir(parents=True, exist_ok=True)
         wrapper_path.unlink(missing_ok=True)
-        wrapper_path.write_text(WRAPPER_CONTENT)
+        wrapper_path.write_text(WRAPPER_CONTENT, encoding="utf-8")
         wrapper_path.chmod(0o755)
         return True, "native BUN_OPTIONS wrapper installed"
     else:
@@ -872,8 +890,9 @@ def _apply_wrapper(p: dict, kind: str, target: "Path | None", dry_run: bool = Fa
                 pass
         if dry_run:
             return True, "would install cli.js wrapper"
+        wrapper_path.parent.mkdir(parents=True, exist_ok=True)
         wrapper_path.unlink(missing_ok=True)
-        wrapper_path.write_text(content)
+        wrapper_path.write_text(content, encoding="utf-8")
         wrapper_path.chmod(0o755)
         return True, "cli.js wrapper installed"
 
@@ -1375,7 +1394,7 @@ def main() -> int:
         help="Show if remote patches differ from local")
 
     sub.add_parser("install-preload",
-        help="Deploy runtime monkey-patch preload hook (100% survival layer)")
+        help="Deploy runtime monkey-patch preload hook (100%% survival layer)")
     sub.add_parser("uninstall-preload",
         help="Remove runtime preload hook")
 
