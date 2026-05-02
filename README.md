@@ -14,9 +14,9 @@
 
 <!-- Custom theme: electric cyan (#00D4FF) primary, neon pink (#FF6B9D) accent, deep space dark #0D1117 bg -->
 
-[![vpcc](https://img.shields.io/badge/vpcc-v2.1.119-00D4FF?style=for-the-badge&logo=gnubash&logoColor=white&labelColor=0D1117)](https://github.com/VoidChecksum/void-patcher-cc/releases)
+[![vpcc](https://img.shields.io/badge/vpcc-v2.1.120-00D4FF?style=for-the-badge&logo=gnubash&logoColor=white&labelColor=0D1117)](https://github.com/VoidChecksum/void-patcher-cc/releases)
 [![patches](https://img.shields.io/badge/patches-96-FF6B9D?style=for-the-badge&logo=codeigniter&logoColor=white&labelColor=0D1117)](patches/)
-[![target](https://img.shields.io/badge/claude--code-v2.1.119-F97316?style=for-the-badge&logo=anthropic&logoColor=white&labelColor=0D1117)](https://www.npmjs.com/package/@anthropic-ai/claude-code)
+[![target](https://img.shields.io/badge/claude--code-v2.1.120-F97316?style=for-the-badge&logo=anthropic&logoColor=white&labelColor=0D1117)](https://www.npmjs.com/package/@anthropic-ai/claude-code)
 [![format](https://img.shields.io/badge/format-ELF_active--bundle_%2B_VFS-9C27B0?style=for-the-badge&logo=bun&logoColor=white&labelColor=0D1117)](https://bun.sh)
 [![license](https://img.shields.io/badge/GPL--3.0-blue?style=for-the-badge&logo=gnu&logoColor=white&labelColor=0D1117)](LICENSE)
 
@@ -25,7 +25,7 @@
 [![auto--heal](https://img.shields.io/badge/auto--heal-on-1F6FEB?style=flat-square&labelColor=0D1117)]()
 [![preload--hook](https://img.shields.io/badge/preload--hook-runtime-E9D900?style=flat-square&labelColor=0D1117)]()
 [![verify](https://img.shields.io/badge/verify-atomic_rollback-FF4F4F?style=flat-square&labelColor=0D1117)]()
-[![vfs--aware](https://img.shields.io/badge/vfs--aware-2.1.119-B866E0?style=flat-square&labelColor=0D1117)]()
+[![vfs--aware](https://img.shields.io/badge/vfs--aware-2.1.120-B866E0?style=flat-square&labelColor=0D1117)]()
 [![python](https://img.shields.io/badge/python-%E2%89%A53.9-3776AB?style=flat-square&logo=python&logoColor=white&labelColor=0D1117)]()
 
 <h1>⚡ vpcc — Void Patcher for Claude Code</h1>
@@ -168,8 +168,9 @@ Falls back to the full section on older (single-bundle) builds.
 | 2.1.0 – 2.1.112 | `cli.js` (Node)      | Lin · mac · Win · WSL      |  26 MB | 70 / 77  | ✅          | legacy      |
 | 2.1.114 – 2.1.117 | Bun SEA (ELF / Mach-O / PE) | Lin · mac (x64/arm64) · Win (x64/arm64) · WSL | 236 MB | 77 / 77  | ✅ | stable      |
 | 2.1.118         | Bun SEA (ELF / Mach-O / PE) | Lin · mac (x64/arm64) · Win (x64/arm64) · WSL | 236 MB | 77 / 77  | ✅ | stable      |
-| **2.1.119**     | **Bun SEA (active-bundle + VFS-copy)** | **Lin · mac (x64/arm64) · Win (x64/arm64) · WSL** | 233 MB | **96/96** | ✅ | **current** |
-| 2.1.120+        | Bun SEA (expected)   | all                        |   —    | auto-heal| ✅          | watch mode  |
+| 2.1.119         | Bun SEA (active-bundle + VFS-copy) | Lin · mac (x64/arm64) · Win (x64/arm64) · WSL | 233 MB | 96/96 | ✅ | stable |
+| **2.1.120**     | **Bun SEA (active-bundle + VFS-copy)** | **Lin · mac (x64/arm64) · Win (x64/arm64) · WSL** | 234 MB | **96/96** | ✅ | **current** |
+| 2.1.121+        | Bun SEA (expected)   | all                        |   —    | auto-heal| ✅          | watch mode  |
 
 </div>
 
@@ -268,12 +269,12 @@ pipx uninstall vpcc
 ```text
 $ vpcc doctor
 vpcc doctor
-  vpcc ver   : 2.1.119
+  vpcc ver   : 2.1.120
   patches    : 96
   target     : .../claude-code-linux-x64/claude
   format     : Bun SEA ELF
-  sha256     : 372814218070
-  size       : 233 MB
+  sha256     : 989a82997d69
+  size       : 234 MB
   sig drift  : 0 (all anchors locatable)
   applied    : all
   backups    : 3
@@ -581,7 +582,7 @@ graph TD
 
 ```
 vpcc/
-├── __init__.py    — version 2.1.119
+├── __init__.py    — version 2.1.120
 ├── __main__.py    — 14 sub-commands
 ├── updater.py     — GitHub API sync + autoheal state machine
 └── scanner.py     — SigScanner + auto-heal regen
@@ -782,7 +783,7 @@ Licensed **GPL-3.0-or-later**.
 
 ```
  $ vpcc doctor
-   vpcc ver   : 2.1.119
+   vpcc ver   : 2.1.120
    patches    : 96
    sig drift  : 0 (all anchors locatable)
    applied    : all
